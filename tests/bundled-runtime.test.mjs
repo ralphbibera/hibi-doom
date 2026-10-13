@@ -13,6 +13,105 @@ import { ammoMask, encodePng } from './pixels.mjs'
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex')
 
+test('the worker exit observer is passive and its cleanup is explicit', {
+  timeout: 5000,
+}, async (t) => {
+  const worker = new BrowserWorker({ mode: 'silent' })
+  t.after(async () => {
+    worker.terminate()
+    await worker.exited()
+  })
+  await assert.rejects(worker.exited(50), /did not exit/)
+  assert.equal(worker.termination, null)
+  assert.ok(worker.worker.threadId > 0)
+  worker.terminate()
+  assert.equal(await worker.exited(), -1)
+})
+
+test('the receive boundary rejects a notification flood and terminates its real worker', {
+  timeout: 15000,
+}, async (t) => {
+  const game = await artifacts()
+  const worker = new BrowserWorker()
+  let disposal = null
+  const session = new GameSession(worker, 15000, {
+    disposed: (error) => {
+      disposal = error
+    },
+  })
+  t.after(async () => {
+    session.dispose()
+    worker.terminate()
+    await worker.exited()
+  })
+  await session.request({ kind: 'startup', ...game }, [
+    game.engine.buffer,
+    game.iwad.buffer,
+  ])
+  await session.request({ kind: 'activity', activity: 'running', epoch: 0 })
+  const frame = {
+    kind: 'frame',
+    activity: 'running',
+    epoch: 0,
+    turn: 0,
+    held: [],
+    taps: [],
+    after: 0,
+  }
+  const first = await session.request(frame)
+  const pending = session.request({ ...frame, after: first.update.sequence })
+  for (let count = 0; count < 257; count++)
+    worker.dispatchEvent(
+      new MessageEvent('message', {
+        data: { kind: 'audio', audio: first.update.audio },
+      }),
+    )
+  await assert.rejects(pending, /notification budget/)
+  assert.match(disposal.message, /notification budget/)
+  assert.equal(session.disposed, true)
+  assert.equal(await worker.exited(), -1)
+})
+
+test('audio outside an outstanding operation disposes the actual session', {
+  timeout: 15000,
+}, async (t) => {
+  const game = await artifacts()
+  const worker = new BrowserWorker()
+  let disposal = null
+  const session = new GameSession(worker, 15000, {
+    disposed: (error) => {
+      disposal = error
+    },
+  })
+  t.after(async () => {
+    session.dispose()
+    worker.terminate()
+    await worker.exited()
+  })
+  await session.request({ kind: 'startup', ...game }, [
+    game.engine.buffer,
+    game.iwad.buffer,
+  ])
+  await session.request({ kind: 'activity', activity: 'running', epoch: 0 })
+  const reply = await session.request({
+    kind: 'frame',
+    activity: 'running',
+    epoch: 0,
+    turn: 0,
+    held: [],
+    taps: [],
+    after: 0,
+  })
+  worker.dispatchEvent(
+    new MessageEvent('message', {
+      data: { kind: 'audio', audio: reply.update.audio },
+    }),
+  )
+  assert.equal(session.disposed, true)
+  assert.match(disposal.message, /without an outstanding operation/)
+  assert.equal(await worker.exited(), -1)
+})
+
 test('the compiled worker rejects corrupted startup artifacts before publishing readiness', {
   timeout: 10000,
 }, async (t) => {
@@ -23,6 +122,7 @@ test('the compiled worker rejects corrupted startup artifacts before publishing 
     const session = new GameSession(worker)
     t.after(async () => {
       session.dispose()
+      worker.terminate()
       await worker.exited()
     })
     await assert.rejects(
@@ -45,11 +145,16 @@ test('timeouts and malformed replies terminate their actual workers', {
     const session = new GameSession(worker, mode === 'silent' ? 80 : 2000)
     t.after(async () => {
       session.dispose()
+      worker.terminate()
       await worker.exited()
     })
-    const request = session.request({ kind: 'activity', activity: 'running' })
+    const request = session.request({
+      kind: 'activity',
+      activity: 'running',
+      epoch: 0,
+    })
     await assert.rejects(
-      session.request({ kind: 'activity', activity: 'paused' }),
+      session.request({ kind: 'activity', activity: 'paused', epoch: 0 }),
       /pending request/,
     )
     await assert.rejects(
@@ -59,7 +164,7 @@ test('timeouts and malformed replies terminate their actual workers', {
     assert.equal(session.disposed, true)
     assert.equal(await worker.exited(), -1)
     await assert.rejects(
-      session.request({ kind: 'activity', activity: 'paused' }),
+      session.request({ kind: 'activity', activity: 'paused', epoch: 0 }),
     )
   }
 })
@@ -180,6 +285,7 @@ test('five fresh compiled workers latch taps, freeze active time, resume, and te
     const session = new GameSession(worker)
     t.after(async () => {
       session.dispose()
+      worker.terminate()
       await worker.exited()
     })
     assert.deepEqual(
@@ -191,13 +297,15 @@ test('five fresh compiled workers latch taps, freeze active time, resume, and te
     )
     assert.equal(engine.byteLength, 0)
     assert.equal(iwad.byteLength, 0)
-    await session.request({ kind: 'activity', activity: 'running' })
+    await session.request({ kind: 'activity', activity: 'running', epoch: 0 })
     let after = 0
     let frame
     async function request(taps = [], held = []) {
       const reply = await session.request({
         kind: 'frame',
         activity: 'running',
+        epoch: 0,
+        turn: 0,
         held,
         taps,
         after,
@@ -222,10 +330,12 @@ test('five fresh compiled workers latch taps, freeze active time, resume, and te
       await delay(16)
     }
     assert.equal(frame.pixels.length, 1024000)
-    await session.request({ kind: 'activity', activity: 'paused' })
+    await session.request({ kind: 'activity', activity: 'paused', epoch: 0 })
     const pausedRequest = {
       kind: 'frame',
       activity: 'paused',
+      epoch: 0,
+      turn: 0,
       held: [],
       taps: [],
       after,
@@ -237,7 +347,7 @@ test('five fresh compiled workers latch taps, freeze active time, resume, and te
       id: frozen.id + 1,
     })
     const resumeStartedAt = performance.now()
-    await session.request({ kind: 'activity', activity: 'running' })
+    await session.request({ kind: 'activity', activity: 'running', epoch: 0 })
     const resumed = await request()
     const activeWallMs = performance.now() - resumeStartedAt
     const resumedElapsedMs = resumed.elapsedMs - frozen.update.elapsedMs
@@ -272,7 +382,7 @@ test('five fresh compiled workers latch taps, freeze active time, resume, and te
     session.dispose()
     assert.equal(await worker.exited(), -1)
     await assert.rejects(
-      session.request({ kind: 'activity', activity: 'paused' }),
+      session.request({ kind: 'activity', activity: 'paused', epoch: 0 }),
       /session ended/,
     )
   }

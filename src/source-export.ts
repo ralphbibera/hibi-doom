@@ -1,5 +1,5 @@
 import type { AddonContext } from '@hibi/addon-sdk/api'
-import { type Artifact, loadArtifact } from './bundle.ts'
+import { type DoomBundle, loadArtifact } from './bundle.ts'
 
 export type ExportState =
   | { kind: 'idle' | 'choosing' | 'saved' | 'disposed' }
@@ -10,13 +10,13 @@ export type ExportState =
 export class SourceExport {
   private state: ExportState = { kind: 'idle' }
   private io: AddonContext['host']['selectedIo']
-  private source: Artifact
+  private source: DoomBundle['source']
   private base: URL
   private changed: (state: ExportState) => void
   private fetchFile: typeof fetch
   constructor(
     io: AddonContext['host']['selectedIo'],
-    source: Artifact,
+    source: DoomBundle['source'],
     base: URL,
     changed: (state: ExportState) => void,
     fetchFile: typeof fetch = fetch,
@@ -60,7 +60,7 @@ export class SourceExport {
       if (this.disposed) return
       this.set({ kind: 'choosing' })
       const selected = await this.io.selectExport({
-        suggestedName: 'hibi-doom-0.3.0-source.tar.gz',
+        suggestedName: this.source.exportName,
         extension: 'gz',
       })
       if (selected.ok && selected.value) handle = selected.value.handle

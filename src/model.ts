@@ -17,42 +17,57 @@ export const actions = [
 ] as const
 export type Action = (typeof actions)[number]
 export type Activity = 'running' | 'paused'
-export type FrameUpdate =
-  | {
-      kind: 'frame'
-      sequence: number
-      elapsedMs: number
-      width: 640
-      height: 400
-      pixels: Uint8Array
-    }
-  | { kind: 'unchanged' | 'paused'; sequence: number; elapsedMs: number }
+type FrameState = {
+  sequence: number
+  elapsedMs: number
+  gameTics: number
+  audio: AudioScene
+}
+export type FrameUpdate = FrameState &
+  (
+    | {
+        kind: 'frame'
+        width: 640
+        height: 400
+        pixels: Uint8Array
+      }
+    | { kind: 'unchanged' | 'paused' }
+  )
 export type WorkerCommand =
   | { id: number; kind: 'startup'; engine: Uint8Array; iwad: Uint8Array }
-  | { id: number; kind: 'activity'; activity: Activity }
+  | { id: number; kind: 'activity'; activity: Activity; epoch: number }
   | {
       id: number
       kind: 'frame'
       activity: Activity
+      epoch: number
+      turn: number
       held: Action[]
       taps: Action[]
       after: number
     }
 export type WorkerRequest =
   | { kind: 'startup'; engine: Uint8Array; iwad: Uint8Array }
-  | { kind: 'activity'; activity: Activity }
+  | { kind: 'activity'; activity: Activity; epoch: number }
   | {
       kind: 'frame'
       activity: Activity
+      epoch: number
+      turn: number
       held: Action[]
       taps: Action[]
       after: number
     }
 export type WorkerReply =
   | { id: number; kind: 'ready'; engine: 'doom' }
-  | { id: number; kind: 'activity'; activity: Activity }
+  | { id: number; kind: 'activity'; activity: Activity; epoch: number }
   | { id: number; kind: 'update'; update: FrameUpdate }
   | { id: number; kind: 'error'; message: string }
+export interface AudioNotice {
+  kind: 'audio'
+  audio: AudioScene
+}
+export type WorkerMessage = WorkerReply | AudioNotice
 
 function object(input: unknown): Record<string, unknown> {
   if (!input || typeof input !== 'object' || Array.isArray(input))
@@ -98,11 +113,22 @@ export function parseFrameUpdate(input: unknown): FrameUpdate {
   const value = object(input)
   const sequence = integer(value.sequence)
   const elapsedMs = integer(value.elapsedMs)
+  const gameTics = integer(value.gameTics)
+  const audio = parseAudioScene(value.audio)
   if (value.kind === 'unchanged' || value.kind === 'paused') {
-    fields(value, ['kind', 'sequence', 'elapsedMs'])
-    return { kind: value.kind, sequence, elapsedMs }
+    fields(value, ['kind', 'sequence', 'elapsedMs', 'gameTics', 'audio'])
+    return { kind: value.kind, sequence, elapsedMs, gameTics, audio }
   }
-  fields(value, ['kind', 'sequence', 'elapsedMs', 'width', 'height', 'pixels'])
+  fields(value, [
+    'kind',
+    'sequence',
+    'elapsedMs',
+    'gameTics',
+    'audio',
+    'width',
+    'height',
+    'pixels',
+  ])
   if (
     value.kind !== 'frame' ||
     value.width !== width ||
@@ -115,6 +141,8 @@ export function parseFrameUpdate(input: unknown): FrameUpdate {
     kind: 'frame',
     sequence,
     elapsedMs,
+    gameTics,
+    audio,
     width,
     height,
     pixels: value.pixels,
@@ -135,14 +163,36 @@ export function parseWorkerCommand(input: unknown): WorkerCommand {
         throw new Error('Invalid bundled Doom startup bytes.')
       return { id, kind: 'startup', engine: value.engine, iwad: value.iwad }
     case 'activity':
-      fields(value, ['id', 'kind', 'activity'])
-      return { id, kind: 'activity', activity: activity(value.activity) }
+      fields(value, ['id', 'kind', 'activity', 'epoch'])
+      return {
+        id,
+        kind: 'activity',
+        activity: activity(value.activity),
+        epoch: integer(value.epoch),
+      }
     case 'frame':
-      fields(value, ['id', 'kind', 'activity', 'held', 'taps', 'after'])
+      fields(value, [
+        'id',
+        'kind',
+        'activity',
+        'held',
+        'taps',
+        'after',
+        'epoch',
+        'turn',
+      ])
+      if (
+        typeof value.turn !== 'number' ||
+        !Number.isInteger(value.turn) ||
+        Math.abs(value.turn) > 2048
+      )
+        throw new Error('Invalid Doom mouse motion.')
       return {
         id,
         kind: 'frame',
         activity: activity(value.activity),
+        epoch: integer(value.epoch),
+        turn: value.turn,
         held: actionList(value.held),
         taps: actionList(value.taps),
         after: integer(value.after),
@@ -161,8 +211,13 @@ export function parseWorkerReply(input: unknown): WorkerReply {
         throw new Error('Invalid Doom worker readiness.')
       return { id, kind: 'ready', engine: 'doom' }
     case 'activity':
-      fields(value, ['id', 'kind', 'activity'])
-      return { id, kind: 'activity', activity: activity(value.activity) }
+      fields(value, ['id', 'kind', 'activity', 'epoch'])
+      return {
+        id,
+        kind: 'activity',
+        activity: activity(value.activity),
+        epoch: integer(value.epoch),
+      }
     case 'update':
       fields(value, ['id', 'kind', 'update'])
       return { id, kind: 'update', update: parseFrameUpdate(value.update) }
@@ -179,3 +234,18 @@ export function parseWorkerReply(input: unknown): WorkerReply {
       throw new Error('Invalid Doom worker reply.')
   }
 }
+
+export function parseAudioNotice(input: unknown): AudioNotice | null {
+  if (
+    !input ||
+    typeof input !== 'object' ||
+    !('kind' in input) ||
+    input.kind !== 'audio'
+  )
+    return null
+  const value = object(input)
+  fields(value, ['kind', 'audio'])
+  return { kind: 'audio', audio: parseAudioScene(value.audio) }
+}
+
+import { type AudioScene, parseAudioScene } from './audio-scene.ts'

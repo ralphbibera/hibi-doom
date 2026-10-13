@@ -47,7 +47,7 @@ The checks run Biome, validate TypeScript against Hibi's SDK, compare prepared f
 
 For a narrower check, use `npm run build:check` for package freshness, `npm run typecheck` for SDK types, or `npm test` for tests alone.
 
-Runtime tests compare interpreted pixels and game state with a native WebAssembly reference. Compiled-worker tests run with native WebAssembly disabled. Downloader tests cover response bounds, corruption, cache reuse, storage failures, cancellation, and cache races.
+Runtime tests compare interpreted pixels and game state with a native WebAssembly reference. Compiled-worker tests run with native WebAssembly disabled. Mouse tests exercise the real responder and tic-command builder, including unconsumed motion, reset, saturation, and the existing sensitivity setting. Audio tests cover PCM trimming, MUS timing and controllers, scene generations, publication and receive budgets, stereo weights, and late output cleanup. Downloader tests cover response bounds, corruption, cache reuse, storage failures, cancellation, and cache races.
 
 The tests obtain verified shareware data through `scripts/download-iwad.mjs`. The script keeps fixtures outside the checkout. Set `HIBI_DOOM_FIXTURE_DIR` to an outside directory to choose another cache location. The first test run needs a connection unless verified fixtures are already cached. Package builds need no game data or network access.
 
@@ -72,6 +72,18 @@ dbus-run-session -- xvfb-run --auto-servernum --server-args='-screen 0 1920x1080
 
 The C engine is a pinned WASI module. `src/vm.mjs` interprets it in the compiled worker. `src/wasi.ts` exposes an immutable `doom1.wad` file and rejects filesystem writes. Game time excludes paused time.
 
+Each completed draw captures 64,000 palette indices and 768 gamma-corrected RGB bytes together. Worker JavaScript expands that owned capture into the original 640 by 400 RGBA output with exact two-by-two duplication and alpha 255. It preserves palette changes without a guest pixel-conversion loop. The canvas and frame cadence remain unchanged.
+
+Mouse motion uses successive `clientX` coordinates. The renderer maps one CSS pixel to eight raw units at a 640-pixel canvas width and retains fractional units between frame samples. Pending renderer motion, the C mailbox, and unconsumed responder motion each saturate at 2,048 units. At the default core sensitivity of five, that bounds a tic to 90 degrees. Saturation deliberately discards overflow. The existing core sensitivity setting applies once when the responder accepts an event. Zero-motion polls preserve unconsumed motion. Suspension clears both the mailbox and the responder.
+
+The addon uses ordinary held-button pointer capture. Stock Hibi denies Pointer Lock, so the cursor remains visible and turning stops at screen edges. Keyboard and pointer actions have separate sources. Escape clears held input and releases capture before retaining its menu tap.
+
+The verified IWAD supplies the complete sound bank before its bytes transfer to the worker. PCM uses the original sample rate and the pinned DMX trim of sixteen samples at each end. `s_sound.c` retains channel selection, priority, replacement, attenuation, and separation. The owned backend answers playing queries from eight worker slots and active-time deadlines. Start, stop, and music transitions publish immediately during guest calls. Parameter changes coalesce into every update, including unchanged video. Both the publisher and receive boundary enforce 256 notices per outstanding operation and fail explicitly on overflow.
+
+`GameAudio` owns one reusable native `AudioContext`. A trusted game interaction creates it. Pause, focus loss, and mute stop and disconnect voices, cancel music scheduling, and suspend the context. Close, disablement, or failure also close it. Output epochs and generation checks reject stale scenes and late resumes. The retained bank does not depend on whether a video reply is displayed.
+
+Effects reproduce the pinned SDL backend's two stereo gain weights. MUS scores retain their original notes, cached velocities, 140 Hz timing, controllers, looping, and pause position. The native oscillator synthesizer uses GENMIDI metadata for approximate instruments. It has at most 24 active or releasing notes, two oscillators per note, a 120 ms lookahead, and a 1,024-event scheduling budget. It does not emulate OPL hardware or a full General MIDI effects processor. It does not pre-render tracks or add audio assets.
+
 The game-data file, or IWAD, is absent from the code package and source export. `engine/pins.json` pins the separate shareware manifest and data. `src/iwad.ts` obtains the manifest and serial base64 parts through `context.host.network.getText`. It validates response addresses, exact sizes, encoding, hashes, and the expected episode before use.
 
 Only completed, verified data enters `context.storage.global('iwad-cache', 1)`. Each new game verifies cached bytes again. Storage failures permit the current game with a warning. Clear invalidates older loads and waits for a started save before removing the cache. A running game keeps its in-memory data.
@@ -90,7 +102,7 @@ python3 scripts/engine-build.py --sdk /path/to/wasi-sdk-27.0 --work /path/to/emp
 
 The script verifies upstream inputs against `engine/upstream-inventory.json`. A checkout supplies `engine/upstream.json`. An exported archive supplies preferred source under `engine/vendor/`. The script rebuilds WASI libc and the selected compiler-rt builtin, then links Doom with those rebuilt libraries.
 
-Project-owned `engine/platform.c`, `engine/doomgeneric.h`, and `engine/config.h` supply startup, framebuffer interfaces, and build constants. The build applies the headers only in its disposable source tree. It excludes upstream `dummy.c` and `doomgeneric.c` from compilation and preserves their original contents in the source export.
+Project-owned `engine/platform.c`, `engine/video.c`, `engine/audio.c`, `engine/doomgeneric.h`, and `engine/config.h` supply startup, indexed graphics, direct sound imports, interfaces, and build constants. `engine/input.patch` adds bounded motion accumulation to the pinned responder. The build applies these source and header overlays only in its disposable source tree. It excludes upstream `dummy.c` and `doomgeneric.c` from compilation and preserves all original source and notices in the export. The owned audio backend does not enable `FEATURE_SOUND` or include SDL.
 
 Require the printed engine byte count and SHA-256 to match `engine/pins.json`. Compare the linked-source inventory:
 
@@ -98,7 +110,16 @@ Require the printed engine byte count and SHA-256 to match `engine/pins.json`. C
 cmp engine/linked.json /path/to/empty-build/linked.json
 ```
 
-The work directory also contains `doom.map`, `headers.d`, `build.log`, and `build.json`. These record the selected sources, compiler dependencies, header overlays, linked libraries, and build arguments.
+The work directory also contains `doom.map`, `headers.d`, `build.log`, and `build.json`. These record the selected sources, compiler dependencies, source and header overlays, linked libraries, and build arguments. `engine/abi.json` records the exact imports, exports, memory limits, and table limits enforced by the interpreter wrapper.
+
+After an intentional engine change, update the pinned engine and ABI from the completed work directory:
+
+```sh
+node scripts/engine-update.mjs /path/to/completed-build
+npm run build
+```
+
+The update script rejects changed owned source or mismatched build provenance. Commit the preferred source, pins, ABI, linked inventory, and prepared resources together. The source export filename derives from `package.json`.
 
 To reproduce an exported addon, choose **Save corresponding source** in Hibi. Extract the archive into a clean directory. Set `HIBI_ROOT` to the pinned host with its dependencies installed, then run `npm run build` there. The archive includes the engine chunks, so this command does not recompile C. It must reproduce every prepared package file, including the compiled modules, manifests, notices, and source chunks.
 

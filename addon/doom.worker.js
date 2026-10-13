@@ -17,6 +17,391 @@ var ActiveClock = class {
   }
 };
 
+// engine/abi.json
+var abi_default = {
+  imports: [
+    [
+      "hibi",
+      "sfx_stop",
+      [
+        127
+      ],
+      []
+    ],
+    [
+      "hibi",
+      "music_stop",
+      [],
+      []
+    ],
+    [
+      "hibi",
+      "sfx_params",
+      [
+        127,
+        127,
+        127
+      ],
+      []
+    ],
+    [
+      "hibi",
+      "sfx_start",
+      [
+        127,
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "hibi",
+      "sfx_playing",
+      [
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "hibi",
+      "music_volume",
+      [
+        127
+      ],
+      []
+    ],
+    [
+      "hibi",
+      "music_pause",
+      [],
+      []
+    ],
+    [
+      "hibi",
+      "music_resume",
+      [],
+      []
+    ],
+    [
+      "hibi",
+      "music_register",
+      [
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "hibi",
+      "music_unregister",
+      [
+        127
+      ],
+      []
+    ],
+    [
+      "hibi",
+      "music_play",
+      [
+        127,
+        127
+      ],
+      []
+    ],
+    [
+      "hibi",
+      "clock_ms",
+      [],
+      [
+        127
+      ]
+    ],
+    [
+      "hibi",
+      "sleep_ms",
+      [
+        127
+      ],
+      []
+    ],
+    [
+      "hibi",
+      "draw_indexed",
+      [
+        127,
+        127
+      ],
+      []
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_close",
+      [
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_fdstat_get",
+      [
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_fdstat_set_flags",
+      [
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_prestat_get",
+      [
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_prestat_dir_name",
+      [
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_read",
+      [
+        127,
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_seek",
+      [
+        127,
+        126,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_write",
+      [
+        127,
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "path_create_directory",
+      [
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "path_open",
+      [
+        127,
+        127,
+        127,
+        127,
+        127,
+        126,
+        126,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "path_remove_directory",
+      [
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "path_rename",
+      [
+        127,
+        127,
+        127,
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "path_unlink_file",
+      [
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "proc_exit",
+      [
+        127
+      ],
+      []
+    ]
+  ],
+  exports: [
+    {
+      name: "memory",
+      kind: 2,
+      signature: null
+    },
+    {
+      name: "_initialize",
+      kind: 0,
+      signature: {
+        parameters: [],
+        results: []
+      }
+    },
+    {
+      name: "doom_mouse",
+      kind: 0,
+      signature: {
+        parameters: [
+          127
+        ],
+        results: [
+          127
+        ]
+      }
+    },
+    {
+      name: "doom_mouse_reset",
+      kind: 0,
+      signature: {
+        parameters: [],
+        results: []
+      }
+    },
+    {
+      name: "doom_key",
+      kind: 0,
+      signature: {
+        parameters: [
+          127,
+          127
+        ],
+        results: [
+          127
+        ]
+      }
+    },
+    {
+      name: "doom_init",
+      kind: 0,
+      signature: {
+        parameters: [],
+        results: []
+      }
+    },
+    {
+      name: "doom_tick",
+      kind: 0,
+      signature: {
+        parameters: [],
+        results: []
+      }
+    },
+    {
+      name: "doom_snapshot",
+      kind: 0,
+      signature: {
+        parameters: [],
+        results: [
+          127
+        ]
+      }
+    }
+  ],
+  memories: [
+    {
+      initial: 512,
+      maximum: 512
+    }
+  ],
+  tables: [
+    {
+      element: 112,
+      initial: 163,
+      maximum: 163
+    }
+  ],
+  start: null
+};
+
 // src/vm.mjs
 var PAGE = 65536;
 var VALUE_TYPES = /* @__PURE__ */ new Set([127, 126, 125, 124, 112]);
@@ -1380,6 +1765,343 @@ var Machine = class {
   }
 };
 
+// src/audio-bank.ts
+function parsePcm(bytes, name = "sound") {
+  const data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (bytes.length < 8 || data.getUint16(0, true) !== 3)
+    throw new Error("Invalid Doom PCM header.");
+  const rate = data.getUint16(2, true);
+  const length = data.getUint32(4, true);
+  if (rate !== 11025 && rate !== 22050 || length <= 48 || length > bytes.length - 8)
+    throw new Error("Invalid Doom PCM extent or rate.");
+  const samples = bytes.slice(24, 8 + length - 16);
+  return {
+    name,
+    rate,
+    bytes: samples,
+    durationMs: samples.length * 1e3 / rate
+  };
+}
+function parseMus(bytes, name = "music") {
+  const data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (bytes.length < 16 || data.getUint32(0, true) !== 441668941)
+    throw new Error("Invalid Doom MUS header.");
+  const length = data.getUint16(4, true);
+  const start = data.getUint16(6, true);
+  const channels = data.getUint16(8, true);
+  const instruments = data.getUint16(12, true);
+  if (bytes.length > 65536 || channels > 15 || instruments > 256 || start < 16 + instruments * 2 || length === 0 || start > bytes.length - length)
+    throw new Error("Invalid Doom MUS extent.");
+  let position = start;
+  let tick = 0;
+  const end = start + length;
+  const velocities = new Uint8Array(16).fill(127);
+  const events = [];
+  const read = () => {
+    if (position >= end) throw new Error("Truncated Doom MUS event.");
+    return data.getUint8(position++);
+  };
+  while (position < end) {
+    if (events.length >= 32768)
+      throw new Error("Doom MUS exceeds its event limit.");
+    const descriptor = read();
+    const channel = descriptor & 15;
+    const kind = descriptor >> 4 & 7;
+    switch (kind) {
+      case 0:
+        events.push({ kind: "off", tick, channel, key: read() & 127 });
+        break;
+      case 1: {
+        const key = read();
+        if (key & 128) velocities[channel] = read() & 127;
+        events.push({
+          kind: "on",
+          tick,
+          channel,
+          key: key & 127,
+          velocity: velocities.at(channel) ?? 127
+        });
+        break;
+      }
+      case 2:
+        events.push({ kind: "pitch", tick, channel, bend: (read() - 128) / 64 });
+        break;
+      case 3: {
+        const control = read();
+        if (control < 10 || control > 14)
+          throw new Error("Invalid Doom MUS system event.");
+        events.push({ kind: "control", tick, channel, control, value: 0 });
+        break;
+      }
+      case 4: {
+        const control = read();
+        const value = Math.min(127, read());
+        if (control > 9) throw new Error("Invalid Doom MUS controller.");
+        events.push({ kind: "control", tick, channel, control, value });
+        break;
+      }
+      case 6:
+        if (tick <= 0) throw new Error("Doom MUS has no positive duration.");
+        return {
+          name,
+          bytes: bytes.slice(),
+          events,
+          durationTicks: tick,
+          durationMs: tick * 1e3 / 140
+        };
+      default:
+        throw new Error("Unknown Doom MUS event.");
+    }
+    if (descriptor & 128) {
+      let delay = 0;
+      for (let count = 0; ; count++) {
+        if (count >= 4) throw new Error("Doom MUS delay exceeds its limit.");
+        const byte = read();
+        delay = delay * 128 + (byte & 127);
+        if (!(byte & 128)) break;
+      }
+      tick += delay;
+      if (tick > 140 * 60 * 10)
+        throw new Error("Doom MUS exceeds its duration limit.");
+    }
+  }
+  throw new Error("Doom MUS has no score-end event.");
+}
+function parseInstruments(bytes) {
+  if (bytes.length !== 11908 || new TextDecoder().decode(bytes.subarray(0, 8)) !== "#OPL_II#")
+    throw new Error("Invalid Doom GENMIDI bank.");
+  const data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const waveforms = [
+    "sine",
+    "triangle",
+    "sawtooth",
+    "square"
+  ];
+  return Array.from({ length: 175 }, (_, index) => {
+    const at = 8 + index * 36;
+    const modulator = at + 4;
+    const carrier = at + 11;
+    const attack = data.getUint8(carrier + 1) >> 4;
+    const envelope = data.getUint8(carrier + 2);
+    const multiplier = data.getUint8(modulator) & 15;
+    return {
+      fixedKey: data.getUint16(at, true) & 1 ? data.getUint8(at + 3) & 127 : null,
+      transpose: data.getInt16(at + 18, true),
+      waveform: waveforms[data.getUint8(carrier + 3) & 3] ?? "sine",
+      modulation: (63 - (data.getUint8(modulator + 5) & 63)) / 63,
+      multiplier: multiplier === 0 ? 0.5 : Math.min(8, multiplier),
+      attack: 3e-3 + (15 - attack) * 3e-3,
+      sustain: Math.max(0.06, 1 - (envelope >> 4) / 15),
+      release: 0.04 + (15 - (envelope & 15)) * 8e-3
+    };
+  });
+}
+function parseAudioBank(iwad) {
+  const data = new DataView(iwad.buffer, iwad.byteOffset, iwad.byteLength);
+  if (iwad.length < 12 || data.getUint32(0, true) !== 1145132873)
+    throw new Error("Invalid Doom audio IWAD.");
+  const count = data.getUint32(4, true);
+  const directory = data.getUint32(8, true);
+  if (count > 4096 || directory > iwad.length - count * 16)
+    throw new Error("Invalid Doom audio lump directory.");
+  const samples = /* @__PURE__ */ new Map();
+  const scores = /* @__PURE__ */ new Map();
+  let instruments = null;
+  const text = new TextDecoder("ascii", { fatal: true });
+  for (let lump = 0; lump < count; lump++) {
+    const at = directory + lump * 16;
+    const offset = data.getUint32(at, true);
+    const length = data.getUint32(at + 4, true);
+    if (offset > iwad.length - length)
+      throw new Error("Doom audio lump is outside its IWAD.");
+    const name = text.decode(iwad.subarray(at + 8, at + 16)).replace(/\0.*$/, "").toUpperCase();
+    const bytes = iwad.subarray(offset, offset + length);
+    if (name.startsWith("DS")) samples.set(lump, parsePcm(bytes, name));
+    else if (name.startsWith("D_")) scores.set(lump, parseMus(bytes, name));
+    else if (name === "GENMIDI") instruments = parseInstruments(bytes);
+  }
+  if (samples.size !== 55 || scores.size !== 13 || !instruments)
+    throw new Error("Doom audio bank is incomplete.");
+  return { samples, scores, instruments };
+}
+
+// src/audio-scene.ts
+var audioNotificationBudget = 256;
+function musicPosition(music, at) {
+  return music.offsetMs + (music.kind === "playing" ? Math.max(0, at - music.anchorAt) : 0);
+}
+var GameSound = class {
+  voices = Array.from({ length: 8 }, () => null);
+  music = { kind: "stopped" };
+  registered = /* @__PURE__ */ new Map();
+  revision = 0;
+  generation = 0;
+  epoch = 0;
+  musicVolume = 127;
+  publications = 0;
+  bank;
+  clock;
+  notify;
+  constructor(bank, clock, notify) {
+    this.bank = bank;
+    this.clock = clock;
+    this.notify = notify;
+  }
+  beginStep() {
+    this.publications = 0;
+  }
+  setEpoch(epoch) {
+    this.epoch = epoch;
+  }
+  publish() {
+    if (++this.publications > audioNotificationBudget)
+      throw new Error("Doom exceeded its sound notification budget.");
+    this.notify(this.scene());
+  }
+  scene() {
+    const at = this.clock();
+    for (let channel = 0; channel < 8; channel++) {
+      const voice = this.voices[channel];
+      if (voice && voice.endsAt <= at) {
+        this.voices[channel] = null;
+        this.revision++;
+      }
+    }
+    const music = this.music;
+    if (music.kind === "playing" && !music.looping) {
+      const score = this.bank.scores.get(music.score);
+      if (score && musicPosition(music, at) >= score.durationMs) {
+        this.music = { kind: "stopped" };
+        this.revision++;
+      }
+    }
+    return {
+      epoch: this.epoch,
+      revision: this.revision,
+      at,
+      voices: this.voices.map((voice) => voice ? { ...voice } : null),
+      music: { ...this.music }
+    };
+  }
+  channel(channel) {
+    if (!Number.isInteger(channel) || channel < 0 || channel >= 8)
+      throw new Error("Invalid Doom sound channel.");
+  }
+  parameters(volume, separation) {
+    if (!Number.isInteger(volume) || volume < 0 || volume > 127 || !Number.isInteger(separation) || separation < 0 || separation > 254)
+      throw new Error("Invalid Doom sound parameters.");
+  }
+  start(channel, sample, volume, separation) {
+    this.channel(channel);
+    this.parameters(volume, separation);
+    const data = this.bank.samples.get(sample);
+    if (!data) throw new Error("Doom requested an unknown PCM sample.");
+    const at = this.clock();
+    this.voices[channel] = {
+      channel,
+      generation: ++this.generation,
+      sample,
+      startedAt: at,
+      endsAt: at + data.durationMs,
+      volume,
+      separation
+    };
+    this.revision++;
+    this.publish();
+    return channel;
+  }
+  stop(channel) {
+    this.channel(channel);
+    if (!this.voices[channel]) return;
+    this.voices[channel] = null;
+    this.revision++;
+    this.publish();
+  }
+  update(channel, volume, separation) {
+    this.channel(channel);
+    this.parameters(volume, separation);
+    const voice = this.voices[channel];
+    if (voice && (voice.volume !== volume || voice.separation !== separation)) {
+      voice.volume = volume;
+      voice.separation = separation;
+      this.revision++;
+    }
+  }
+  playing(channel) {
+    this.channel(channel);
+    const voice = this.voices[channel];
+    return voice && voice.endsAt > this.clock() ? 1 : 0;
+  }
+  register(bytes) {
+    for (const [score, data] of this.bank.scores) {
+      if (data.bytes.length === bytes.length && data.bytes.every((byte, index) => byte === bytes[index])) {
+        const handle = score + 1;
+        this.registered.set(handle, score);
+        return handle;
+      }
+    }
+    throw new Error("Doom registered an unknown MUS score.");
+  }
+  unregister(handle) {
+    const score = this.registered.get(handle);
+    if (score === void 0) throw new Error("Invalid Doom music registration.");
+    if (this.music.kind !== "stopped" && this.music.score === score)
+      this.stopMusic();
+    this.registered.delete(handle);
+  }
+  playMusic(handle, looping) {
+    const score = this.registered.get(handle);
+    if (score === void 0 || looping !== 0 && looping !== 1)
+      throw new Error("Invalid Doom music playback.");
+    this.music = {
+      kind: "playing",
+      generation: ++this.generation,
+      score,
+      anchorAt: this.clock(),
+      offsetMs: 0,
+      looping: looping === 1,
+      volume: this.musicVolume
+    };
+    this.revision++;
+    this.publish();
+  }
+  stopMusic() {
+    if (this.music.kind === "stopped") return;
+    this.music = { kind: "stopped" };
+    this.revision++;
+    this.publish();
+  }
+  pauseMusic() {
+    if (this.music.kind !== "playing") return;
+    const at = this.clock();
+    this.music = {
+      ...this.music,
+      kind: "paused",
+      offsetMs: musicPosition(this.music, at),
+      anchorAt: at
+    };
+    this.revision++;
+    this.publish();
+  }
+  resumeMusic() {
+    if (this.music.kind !== "paused") return;
+    this.music = { ...this.music, kind: "playing", anchorAt: this.clock() };
+    this.revision++;
+    this.publish();
+  }
+  volume(volume) {
+    this.parameters(volume, 127);
+    this.musicVolume = volume;
+    if (this.music.kind !== "stopped" && this.music.volume !== volume) {
+      this.music = { ...this.music, volume };
+      this.revision++;
+    }
+  }
+  musicPlaying() {
+    return this.scene().music.kind === "stopped" ? 0 : 1;
+  }
+};
+
 // src/model.ts
 var width = 640;
 var height = 400;
@@ -1441,14 +2163,32 @@ function parseWorkerCommand(input) {
         throw new Error("Invalid bundled Doom startup bytes.");
       return { id, kind: "startup", engine: value.engine, iwad: value.iwad };
     case "activity":
-      fields(value, ["id", "kind", "activity"]);
-      return { id, kind: "activity", activity: activity(value.activity) };
+      fields(value, ["id", "kind", "activity", "epoch"]);
+      return {
+        id,
+        kind: "activity",
+        activity: activity(value.activity),
+        epoch: integer(value.epoch)
+      };
     case "frame":
-      fields(value, ["id", "kind", "activity", "held", "taps", "after"]);
+      fields(value, [
+        "id",
+        "kind",
+        "activity",
+        "held",
+        "taps",
+        "after",
+        "epoch",
+        "turn"
+      ]);
+      if (typeof value.turn !== "number" || !Number.isInteger(value.turn) || Math.abs(value.turn) > 2048)
+        throw new Error("Invalid Doom mouse motion.");
       return {
         id,
         kind: "frame",
         activity: activity(value.activity),
+        epoch: integer(value.epoch),
+        turn: value.turn,
         held: actionList(value.held),
         taps: actionList(value.taps),
         after: integer(value.after)
@@ -1468,14 +2208,24 @@ var errno = {
   noent: 44,
   notcapable: 76
 };
-function createWasiHost(iwad, buffer, clock) {
+function createWasiHost(iwad, buffer, clock, notify = () => {
+}) {
+  const readClock = () => {
+    const at = clock();
+    if (!Number.isFinite(at) || at < 0)
+      throw new Error("Invalid Doom active clock.");
+    return at;
+  };
+  const sound = new GameSound(parseAudioBank(iwad), readClock, notify);
   const descriptors = /* @__PURE__ */ new Map([
     [1, { kind: "log" }],
     [2, { kind: "log" }],
     [3, { kind: "directory" }]
   ]);
   const utf8 = new TextDecoder("utf-8", { fatal: true });
-  let pointer = null;
+  let captured = false;
+  const indices = new Uint8Array(320 * 200);
+  const palette = new Uint8Array(256 * 3);
   let sequence = 0;
   let log = "";
   const bytes = () => new Uint8Array(buffer());
@@ -1513,20 +2263,36 @@ function createWasiHost(iwad, buffer, clock) {
   const imports = {
     hibi: {
       clock_ms: () => {
-        const milliseconds = clock();
-        if (!Number.isFinite(milliseconds) || milliseconds < 0)
-          throw new Error("Invalid Doom active clock.");
-        return milliseconds | 0;
+        return readClock() | 0;
       },
       sleep_ms: (milliseconds) => {
         if (!Number.isInteger(milliseconds) || milliseconds < 0 || milliseconds > 1e3)
           throw new Error("Invalid Doom sleep duration.");
       },
-      draw_rgba: (address) => {
-        extent(address, frameBytes);
-        pointer = address;
+      draw_indexed: (address, paletteAddress) => {
+        const pixels = extent(address, indices.length);
+        const colors = extent(paletteAddress, palette.length);
+        indices.set(pixels);
+        palette.set(colors);
+        captured = true;
         sequence++;
-      }
+      },
+      sfx_start: (channel, sample, volume, separation) => sound.start(channel, sample, volume, separation),
+      sfx_stop: (channel) => sound.stop(channel),
+      sfx_params: (channel, volume, separation) => sound.update(channel, volume, separation),
+      sfx_playing: (channel) => sound.playing(channel),
+      music_register: (address, length) => {
+        if (length < 16 || length > 65536)
+          throw new Error("Invalid Doom music registration extent.");
+        return sound.register(extent(address, length));
+      },
+      music_unregister: (handle) => sound.unregister(handle),
+      music_play: (handle, looping) => sound.playMusic(handle, looping),
+      music_stop: () => sound.stopMusic(),
+      music_pause: () => sound.pauseMusic(),
+      music_resume: () => sound.resumeMusic(),
+      music_volume: (volume) => sound.volume(volume),
+      music_playing: () => sound.musicPlaying()
     },
     wasi_snapshot_preview1: {
       fd_close: (fd) => {
@@ -1632,6 +2398,7 @@ function createWasiHost(iwad, buffer, clock) {
   };
   return {
     imports,
+    sound,
     get sequence() {
       return sequence;
     },
@@ -1641,12 +2408,24 @@ function createWasiHost(iwad, buffer, clock) {
     frame(after = 0) {
       if (!Number.isSafeInteger(after) || after < 0 || after > sequence)
         throw new Error("Invalid Doom frame cursor.");
-      return pointer === null || after === sequence ? null : {
-        sequence,
-        width: 640,
-        height: 400,
-        pixels: extent(pointer, frameBytes).slice()
-      };
+      if (!captured || after === sequence) return null;
+      const pixels = new Uint8Array(frameBytes);
+      const indexView = new DataView(indices.buffer);
+      const colorView = new DataView(palette.buffer);
+      for (let y = 0; y < 200; y++) {
+        let output = y * 2 * 640 * 4;
+        for (let x = 0; x < 320; x++) {
+          const color = indexView.getUint8(y * 320 + x) * 3;
+          for (let duplicate = 0; duplicate < 2; duplicate++) {
+            pixels[output++] = colorView.getUint8(color);
+            pixels[output++] = colorView.getUint8(color + 1);
+            pixels[output++] = colorView.getUint8(color + 2);
+            pixels[output++] = 255;
+          }
+        }
+        pixels.copyWithin(output, output - 640 * 4, output);
+      }
+      return { sequence, width: 640, height: 400, pixels };
     }
   };
 }
@@ -1666,36 +2445,8 @@ var keyCodes = {
   escape: 27,
   map: 9
 };
-var abi = [
-  ["hibi", "clock_ms", [], [127]],
-  ["hibi", "sleep_ms", [127], []],
-  ["hibi", "draw_rgba", [127], []],
-  ["wasi_snapshot_preview1", "fd_close", [127], [127]],
-  ["wasi_snapshot_preview1", "fd_fdstat_get", [127, 127], [127]],
-  ["wasi_snapshot_preview1", "fd_fdstat_set_flags", [127, 127], [127]],
-  ["wasi_snapshot_preview1", "fd_prestat_get", [127, 127], [127]],
-  ["wasi_snapshot_preview1", "fd_prestat_dir_name", [127, 127, 127], [127]],
-  ["wasi_snapshot_preview1", "fd_read", [127, 127, 127, 127], [127]],
-  ["wasi_snapshot_preview1", "fd_seek", [127, 126, 127, 127], [127]],
-  ["wasi_snapshot_preview1", "fd_write", [127, 127, 127, 127], [127]],
-  ["wasi_snapshot_preview1", "path_create_directory", [127, 127, 127], [127]],
-  [
-    "wasi_snapshot_preview1",
-    "path_open",
-    [127, 127, 127, 127, 127, 126, 126, 127, 127],
-    [127]
-  ],
-  ["wasi_snapshot_preview1", "path_remove_directory", [127, 127, 127], [127]],
-  [
-    "wasi_snapshot_preview1",
-    "path_rename",
-    [127, 127, 127, 127, 127, 127],
-    [127]
-  ],
-  ["wasi_snapshot_preview1", "path_unlink_file", [127, 127, 127], [127]],
-  ["wasi_snapshot_preview1", "proc_exit", [127], []]
-];
-function boot(engine2, iwad, clock) {
+function boot(engine2, iwad, clock, notify = () => {
+}) {
   const module = parse(engine2);
   const imported = module.functions.filter((fn) => fn.imported);
   if (JSON.stringify(
@@ -1705,14 +2456,22 @@ function boot(engine2, iwad, clock) {
       fn.signature.parameters,
       fn.signature.results
     ])
-  ) !== JSON.stringify(abi) || module.start !== null || module.memories.length !== 1 || module.memories[0]?.initial !== 512 || module.memories[0]?.maximum !== 512 || module.tables.length !== 1 || module.tables[0]?.initial !== 163 || module.tables[0]?.maximum !== 163)
+  ) !== JSON.stringify(abi_default.imports) || module.start !== abi_default.start || JSON.stringify(module.memories) !== JSON.stringify(abi_default.memories) || JSON.stringify(module.tables) !== JSON.stringify(abi_default.tables) || JSON.stringify(
+    [...module.exports].map(([name, value]) => ({
+      name,
+      kind: value.kind,
+      signature: value.kind === 0 ? module.functions[value.index]?.signature : null
+    }))
+  ) !== JSON.stringify(abi_default.exports))
     throw new Error("Unsupported Doom guest ABI.");
   for (const [name, parameters, results] of [
     ["_initialize", [], []],
     ["doom_init", [], []],
     ["doom_tick", [], []],
     ["doom_key", [127, 127], [127]],
-    ["doom_snapshot", [], [127]]
+    ["doom_snapshot", [], [127]],
+    ["doom_mouse", [127], [127]],
+    ["doom_mouse_reset", [], []]
   ]) {
     const exported = module.exports.get(name);
     const fn = exported?.kind === 0 ? module.functions[exported.index] : void 0;
@@ -1726,14 +2485,19 @@ function boot(engine2, iwad, clock) {
       if (!machine) throw new Error("Doom guest memory is not ready.");
       return machine.buffer;
     },
-    clock
+    clock,
+    notify
   );
   machine = new Machine(module, host.imports, 512, 512);
   machine.callExport("_initialize");
+  host.sound.beginStep();
   machine.callExport("doom_init");
   const guest = machine;
   const held = /* @__PURE__ */ new Set();
   return {
+    beginAudioStep: () => host.sound.beginStep(),
+    setAudioEpoch: (epoch) => host.sound.setEpoch(epoch),
+    audio: () => host.sound.scene(),
     step() {
       guest.callExport("doom_tick");
     },
@@ -1746,6 +2510,14 @@ function boot(engine2, iwad, clock) {
       if (result !== 0) throw new Error("Doom input queue is full.");
       if (pressed) held.add(action);
       else held.delete(action);
+    },
+    turn(delta) {
+      if (!delta) return;
+      const [result] = guest.callExport("doom_mouse", [delta]);
+      if (result !== 0) throw new Error("Invalid Doom mouse motion.");
+    },
+    resetTurn() {
+      guest.callExport("doom_mouse_reset");
     },
     frame: host.frame,
     snapshot() {
@@ -1764,8 +2536,8 @@ function boot(engine2, iwad, clock) {
 var pins_default = {
   schema: 1,
   engine: {
-    bytes: 456566,
-    sha256: "9f49010fb7ea8111346f315a6261806268f4fc70dd9b3d951b9a8eca3f3fbf82",
+    bytes: 456114,
+    sha256: "33aa16f84b0166fcc1ff150ee90f12e89593cacbd005fd3b7f35c88eecb01416",
     revision: "e257a09527062bfb986b6e5e0780839b6cbd5b71",
     license: "GPL-3.0-only",
     sourceLicense: "GPL-2.0-or-later AND GPL-3.0-or-later AND GPL-3.0-only"
@@ -1791,7 +2563,28 @@ var pins_default = {
   compilerRtRevision: "87f0227cb60147a26a1eeb4fb06e3b505e9c7261"
 };
 
+// package.json
+var package_default = {
+  name: "hibi-doom",
+  version: "0.4.0",
+  private: true,
+  type: "module",
+  license: "GPL-3.0-only",
+  engines: {
+    node: ">=24.0.0"
+  },
+  scripts: {
+    check: "node scripts/check.mjs",
+    build: "node scripts/build.mjs",
+    "build:check": "node scripts/build.mjs --check",
+    typecheck: "node scripts/typecheck.mjs",
+    test: "node --test --test-concurrency=1 tests/model.test.mjs tests/input.test.mjs tests/audio.test.mjs tests/audio-owner.test.mjs tests/audio-worker.test.mjs tests/video.test.mjs tests/mouse-runtime.test.mjs tests/install.test.mjs tests/bundle.test.mjs tests/iwad.test.mjs tests/bundled-runtime.test.mjs",
+    "test:hibi": "node --test tests/hibi.integration.test.mjs"
+  }
+};
+
 // src/bundle.ts
+var sourceExportName = `hibi-doom-${package_default.version}-source.tar.gz`;
 var maxChunk = 3 * 1024 * 1024;
 var maxArtifact = 16 * 1024 * 1024;
 async function sha256(bytes) {
@@ -1843,8 +2636,12 @@ var DoomEngine = class {
   held = /* @__PURE__ */ new Set();
   taps = /* @__PURE__ */ new Map();
   clock;
-  constructor(clock = new ActiveClock()) {
+  epoch = 0;
+  notify;
+  constructor(clock = new ActiveClock(), notify = () => {
+  }) {
     this.clock = clock;
+    this.notify = notify;
   }
   async handle(input) {
     if (input.kind === "startup") {
@@ -1854,7 +2651,7 @@ var DoomEngine = class {
       try {
         const { engine: engine2, iwad } = await validateGame(input.engine, input.iwad);
         this.clock.set("running");
-        const vm = boot(engine2, iwad, this.clock.read);
+        const vm = boot(engine2, iwad, this.clock.read, this.notify);
         this.clock.set("paused");
         this.state = { kind: "ready", vm, activity: "paused" };
         return { id: input.id, kind: "ready", engine: "doom" };
@@ -1866,16 +2663,27 @@ var DoomEngine = class {
     }
     const state = this.state;
     if (state.kind !== "ready") throw new Error("Doom is not ready.");
+    state.vm.beginAudioStep();
     if (input.kind === "activity") {
       for (const action of this.held) state.vm.key(action, false);
       this.held.clear();
       this.taps.clear();
+      state.vm.resetTurn();
+      this.epoch = input.epoch;
+      state.vm.setAudioEpoch(input.epoch);
       this.clock.set(input.activity);
       state.activity = input.activity;
-      return { id: input.id, kind: "activity", activity: input.activity };
+      return {
+        id: input.id,
+        kind: "activity",
+        activity: input.activity,
+        epoch: this.epoch
+      };
     }
     if (input.after > state.vm.statistics.sequence)
       throw new Error("Doom frame cursor is ahead of the engine.");
+    if (input.epoch !== this.epoch)
+      throw new Error("Doom input epoch is out of date.");
     if (state.activity === "paused" || input.activity === "paused")
       return {
         id: input.id,
@@ -1883,7 +2691,9 @@ var DoomEngine = class {
         update: {
           kind: "paused",
           sequence: state.vm.statistics.sequence,
-          elapsedMs: Math.floor(this.clock.read())
+          elapsedMs: Math.floor(this.clock.read()),
+          gameTics: state.vm.snapshot()[3] ?? 0,
+          audio: state.vm.audio()
         }
       };
     const next = new Set(input.held);
@@ -1899,6 +2709,7 @@ var DoomEngine = class {
       }
     }
     this.held = /* @__PURE__ */ new Set([...next, ...latched]);
+    state.vm.turn(input.turn);
     state.vm.step();
     for (const [action, releaseAfter] of this.taps)
       if (startedAt >= releaseAfter) {
@@ -1909,20 +2720,26 @@ var DoomEngine = class {
         this.taps.delete(action);
       }
     const frame = state.vm.frame(input.after);
+    const audio = state.vm.audio();
     const common = {
       sequence: state.vm.statistics.sequence,
-      elapsedMs: Math.floor(this.clock.read())
+      elapsedMs: Math.floor(audio.at),
+      gameTics: state.vm.snapshot()[3] ?? 0,
+      audio
     };
     return {
       id: input.id,
       kind: "update",
-      update: frame ? { kind: "frame", ...frame, elapsedMs: common.elapsedMs } : { kind: "unchanged", ...common }
+      update: frame ? { kind: "frame", ...frame, ...common } : { kind: "unchanged", ...common }
     };
   }
 };
 
 // src/doom.worker.ts
-var engine = new DoomEngine();
+var engine = new DoomEngine(
+  void 0,
+  (audio) => self.postMessage({ kind: "audio", audio }, [])
+);
 self.addEventListener("message", (event) => {
   void respond(event.data);
 });

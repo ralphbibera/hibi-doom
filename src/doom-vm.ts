@@ -1,4 +1,7 @@
 // Copyright (C) 2026 Ralph Bibera. SPDX-License-Identifier: GPL-3.0-only
+
+import abi from '../engine/abi.json' with { type: 'json' }
+import type { AudioScene } from './audio-scene.ts'
 import type { Action } from './model.ts'
 import { Machine, parse } from './vm.mjs'
 import { createWasiHost } from './wasi.ts'
@@ -17,40 +20,11 @@ const keyCodes: Readonly<Record<Action, number>> = {
   escape: 27,
   map: 9,
 }
-const abi = [
-  ['hibi', 'clock_ms', [], [127]],
-  ['hibi', 'sleep_ms', [127], []],
-  ['hibi', 'draw_rgba', [127], []],
-  ['wasi_snapshot_preview1', 'fd_close', [127], [127]],
-  ['wasi_snapshot_preview1', 'fd_fdstat_get', [127, 127], [127]],
-  ['wasi_snapshot_preview1', 'fd_fdstat_set_flags', [127, 127], [127]],
-  ['wasi_snapshot_preview1', 'fd_prestat_get', [127, 127], [127]],
-  ['wasi_snapshot_preview1', 'fd_prestat_dir_name', [127, 127, 127], [127]],
-  ['wasi_snapshot_preview1', 'fd_read', [127, 127, 127, 127], [127]],
-  ['wasi_snapshot_preview1', 'fd_seek', [127, 126, 127, 127], [127]],
-  ['wasi_snapshot_preview1', 'fd_write', [127, 127, 127, 127], [127]],
-  ['wasi_snapshot_preview1', 'path_create_directory', [127, 127, 127], [127]],
-  [
-    'wasi_snapshot_preview1',
-    'path_open',
-    [127, 127, 127, 127, 127, 126, 126, 127, 127],
-    [127],
-  ],
-  ['wasi_snapshot_preview1', 'path_remove_directory', [127, 127, 127], [127]],
-  [
-    'wasi_snapshot_preview1',
-    'path_rename',
-    [127, 127, 127, 127, 127, 127],
-    [127],
-  ],
-  ['wasi_snapshot_preview1', 'path_unlink_file', [127, 127, 127], [127]],
-  ['wasi_snapshot_preview1', 'proc_exit', [127], []],
-] as const
-
 export function boot(
   engine: Uint8Array,
   iwad: Uint8Array,
   clock: () => number,
+  notify: (scene: AudioScene) => void = () => {},
 ) {
   const module = parse(engine)
   const imported = module.functions.filter((fn) => fn.imported)
@@ -62,14 +36,18 @@ export function boot(
         fn.signature.parameters,
         fn.signature.results,
       ]),
-    ) !== JSON.stringify(abi) ||
-    module.start !== null ||
-    module.memories.length !== 1 ||
-    module.memories[0]?.initial !== 512 ||
-    module.memories[0]?.maximum !== 512 ||
-    module.tables.length !== 1 ||
-    module.tables[0]?.initial !== 163 ||
-    module.tables[0]?.maximum !== 163
+    ) !== JSON.stringify(abi.imports) ||
+    module.start !== abi.start ||
+    JSON.stringify(module.memories) !== JSON.stringify(abi.memories) ||
+    JSON.stringify(module.tables) !== JSON.stringify(abi.tables) ||
+    JSON.stringify(
+      [...module.exports].map(([name, value]) => ({
+        name,
+        kind: value.kind,
+        signature:
+          value.kind === 0 ? module.functions[value.index]?.signature : null,
+      })),
+    ) !== JSON.stringify(abi.exports)
   )
     throw new Error('Unsupported Doom guest ABI.')
   for (const [name, parameters, results] of [
@@ -78,6 +56,8 @@ export function boot(
     ['doom_tick', [], []],
     ['doom_key', [127, 127], [127]],
     ['doom_snapshot', [], [127]],
+    ['doom_mouse', [127], [127]],
+    ['doom_mouse_reset', [], []],
   ] as const) {
     const exported = module.exports.get(name)
     const fn =
@@ -96,13 +76,18 @@ export function boot(
       return machine.buffer
     },
     clock,
+    notify,
   )
   machine = new Machine(module, host.imports, 512, 512)
   machine.callExport('_initialize')
+  host.sound.beginStep()
   machine.callExport('doom_init')
   const guest = machine
   const held = new Set<Action>()
   return {
+    beginAudioStep: () => host.sound.beginStep(),
+    setAudioEpoch: (epoch: number) => host.sound.setEpoch(epoch),
+    audio: () => host.sound.scene(),
     step() {
       guest.callExport('doom_tick')
     },
@@ -115,6 +100,14 @@ export function boot(
       if (result !== 0) throw new Error('Doom input queue is full.')
       if (pressed) held.add(action)
       else held.delete(action)
+    },
+    turn(delta: number) {
+      if (!delta) return
+      const [result] = guest.callExport('doom_mouse', [delta])
+      if (result !== 0) throw new Error('Invalid Doom mouse motion.')
+    },
+    resetTurn() {
+      guest.callExport('doom_mouse_reset')
     },
     frame: host.frame,
     snapshot() {

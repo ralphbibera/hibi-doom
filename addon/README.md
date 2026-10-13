@@ -6,34 +6,37 @@ The engine is included. The first **Play Doom** downloads unchanged Doom 1.9 sha
 
 ## Install and play
 
-Use a Hibi build with addon API version 2. URL installation requires a publicly accessible ZIP.
+Use a Hibi build with addon API version 2. This repository is private. Install a local package from its owner or use the prepared `addon/` folder in a checkout.
 
-Install Doom through Hibi's settings:
+Install the prepared package in Hibi:
 
-1. Open **Settings > Addons > Install from URL**.
-2. Paste this ZIP URL:
+If the owner supplies a ZIP, extract it first.
 
-   ```text
-   https://github.com/ralphbibera/hibi-doom/archive/refs/heads/main.zip
-   ```
-
+1. Choose **Install addon…** from the command palette.
+2. Select the prepared addon folder containing `hibi-addon.json`.
 3. Review **Doom** and the trust notice, then confirm installation.
 4. Enable **Doom** under **Settings > Addons**. Hibi installs the addon disabled.
 5. Choose **Play Doom** from the command palette or app menu.
 
-Connect to the internet for installation and the first game. Doom shows download progress and starts automatically. You do not need Git, Node.js, or a manual engine or game download.
+Connect to the internet for the first game. Doom shows download progress and starts automatically. You do not need Git, Node.js, or a manual engine or game download.
+
+**Settings > Addons > Install from URL** also accepts a public HTTPS addon ZIP. It cannot download this private repository.
 
 When the title appears, click the game, press `Enter`, and choose **New Game**, the first episode, and a difficulty. Run **Play Doom** again to return to an open game.
 
 ## Controls
+
+Move the mouse horizontally while the game has focus to turn and aim. Left click fires, and right click opens doors or uses switches. Vertical mouse movement is ignored.
+
+The cursor stays visible. Holding a game mouse button keeps the drag active outside the canvas, but the cursor cannot move past the screen edge. Escape releases the drag and opens Doom's menu. Change **Mouse sensitivity** in Doom's **Options** menu to adjust turning speed.
 
 Use these keys while the game has focus:
 
 | Key | Action |
 | --- | --- |
 | Up or W, Down or S | Move forward or backward. |
-| Left or A, Right or D | Turn left or right. |
-| Comma or period | Strafe left or right. |
+| Left or Right | Turn left or right. |
+| A or comma, D or period | Strafe left or right. |
 | F | Fire. |
 | Space | Open a door or use a switch. |
 | Shift | Run. |
@@ -44,11 +47,15 @@ Use these keys while the game has focus:
 
 Use **Pause** or **Resume** above the game. Doom also pauses when the game loses focus or Hibi's window is hidden. Click the game to resume.
 
-Closing the Doom tab or quitting Hibi ends the session. Reopening a closed tab starts a fresh game. Doom has no sound, saved games, or custom game-data support.
+Sound starts when you click the game or press a game key. Use **Mute** and **Volume** above the game to control it. Effects use Doom's original sound samples. Episode music plays the original scores through an approximate synthesizer, so the instruments differ from DOS Doom.
+
+Pause and focus loss silence the game immediately. Returning to the game resumes its music at the current game position.
+
+Closing the Doom tab or quitting Hibi ends the session. Reopening a closed tab starts a fresh game. Doom has no saved games or custom game-data support.
 
 ## Update or remove the addon
 
-To update Doom, repeat the URL installation and review the replacement. Enable **Doom** again after the update. Hibi installs replacements disabled.
+To update Doom, install the new prepared package and review the replacement. Enable **Doom** again after the update. Hibi installs replacements disabled.
 
 To disable Doom, turn it off under **Settings > Addons**. To uninstall it, use the addon's remove button.
 
@@ -61,6 +68,7 @@ Cached game data stays on this device after uninstall. To remove the data, open 
 - If the download or game fails, close the Doom tab and run **Play Doom** again. Reinstall if Hibi reports incomplete or changed package resources.
 - If Doom reports that Hibi could not save its data, you can play that session. The next new game needs a connection.
 - If keys do not control the game, click the game to focus it. `Shift+Tab` returns to Hibi's controls.
+- If the game is silent, click it or press a game key, then check **Mute** and **Volume**. Doom reports an unavailable audio context below the canvas.
 
 Report addon problems in [Hibi Doom issues](https://github.com/ralphbibera/hibi-doom/issues). Include your Hibi version, addon version, error message, and steps to reproduce the problem.
 

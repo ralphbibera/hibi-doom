@@ -11,14 +11,14 @@
 #define DOOMGENERIC_RESX 640
 #define DOOMGENERIC_RESY 400
 
-extern uint32_t *DG_ScreenBuffer;
-
 void DG_Init(void);
-void DG_DrawFrame(void);
+void DG_DrawIndexedFrame(const unsigned char *indices,
+                        const unsigned char *palette_rgb);
 uint32_t DG_GetTicksMs(void);
 void DG_SleepMs(uint32_t ms);
 int DG_GetKey(int *pressed, unsigned char *key);
 void DG_SetWindowTitle(const char *title);
+void DG_PollMouse(void);
 void doomgeneric_Tick(void);
 
 #endif

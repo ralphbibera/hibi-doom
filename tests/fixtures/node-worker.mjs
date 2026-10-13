@@ -13,6 +13,7 @@ export class BrowserWorker extends EventTarget {
       this.dispatchEvent(new MessageEvent('message', { data })),
     )
     this.worker.on('error', () => this.dispatchEvent(new Event('error')))
+    this.exit = new Promise((resolve) => this.worker.once('exit', resolve))
     this.termination = null
   }
 
@@ -24,9 +25,21 @@ export class BrowserWorker extends EventTarget {
     this.termination ??= this.worker.terminate()
   }
 
-  async exited() {
-    this.terminate()
-    await this.termination
-    return this.worker.threadId
+  async exited(timeout = 5000) {
+    let timer
+    try {
+      await Promise.race([
+        this.exit,
+        new Promise((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error('The Doom test worker did not exit.')),
+            timeout,
+          )
+        }),
+      ])
+      return this.worker.threadId
+    } finally {
+      clearTimeout(timer)
+    }
   }
 }

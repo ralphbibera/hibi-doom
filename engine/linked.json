@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "engineSha256": "9f49010fb7ea8111346f315a6261806268f4fc70dd9b3d951b9a8eca3f3fbf82",
-  "platformSha256": "b54433e3ebc45254cd3533ac19bf27c86b55c86b8f6ad62e6371efc2522add62",
+  "engineSha256": "33aa16f84b0166fcc1ff150ee90f12e89593cacbd005fd3b7f35c88eecb01416",
+  "platformSha256": "51ee45adb52fb71b3711b857d5af370519195be92c087dc58c687ecda8b1d0f1",
   "linked": [
     {
       "archive": "libc.a",
@@ -118,7 +118,7 @@
     "vendor/doomgeneric/doomgeneric/d_net.c": "dd6cbd6e3ebc379bcdfca2e02e2bf0a5a3bfe8c1945a920f8c8dacac9fc45890",
     "vendor/doomgeneric/doomgeneric/f_finale.c": "ac5ea9aff7dc47a8621e014b9f65ff91ac5cf8cdc1dcdaa855bbd5e3acc00861",
     "vendor/doomgeneric/doomgeneric/f_wipe.c": "60969b7843a0eb0483f549abff2c4fcd20ccfeafc5ace8817836d1e895819fa0",
-    "vendor/doomgeneric/doomgeneric/g_game.c": "88d13781006089e80f8d1e4c1bea9fe6934f1314c290a1f379fc8155c3268123",
+    "vendor/doomgeneric/doomgeneric/g_game.c": "0dd7fa80183cdbe9c684c182c47964425ade26bb218ae86873d8e310ed3b20cb",
     "vendor/doomgeneric/doomgeneric/hu_lib.c": "fa6fa03cab0645248aeb16400ced25f9b8d52cadb9bf988ec9a6e2dcac228018",
     "vendor/doomgeneric/doomgeneric/hu_stuff.c": "726c8fa2a23a4da67b87b312156d9b04472c9cf966f210031e6924d46865ce0f",
     "vendor/doomgeneric/doomgeneric/info.c": "43ed8b32ecd053e26b485a5443d8c11d4cf302377d5f62655d302964c90e2a0f",
@@ -126,7 +126,7 @@
     "vendor/doomgeneric/doomgeneric/i_endoom.c": "4fd3d8b7b8959512b6742cb922b3a637f137ab64dd00c1811f146a18db80b590",
     "vendor/doomgeneric/doomgeneric/i_joystick.c": "01f52e0e986dfe3114e97a388f977a01d74e9bd16a454a57df58d6ecaeb7d519",
     "vendor/doomgeneric/doomgeneric/i_scale.c": "f9dad27d7cae5ca6a63c87570c359d40e35002fb499c7d8a2e58ebb291a93e92",
-    "vendor/doomgeneric/doomgeneric/i_sound.c": "715918bc37b927c9426f37c3565d58d0f9f7bb517791b88b673820cc768572ee",
+    "vendor/doomgeneric/doomgeneric/i_sound.c": "639a3d842f54603c658e644f127b8baefa5a7340abdf2230251400a42e174e7b",
     "vendor/doomgeneric/doomgeneric/i_system.c": "e547a31d179f5aeb3a377f4d4fe22d46d212e737d2dedde8b64b0d253a4d71f9",
     "vendor/doomgeneric/doomgeneric/i_timer.c": "cf59e0db8d0ce9cefeb22643141a8983cea3668f16bae2bf009c58979c3b5cb3",
     "vendor/doomgeneric/doomgeneric/memio.c": "29619ef12147ce4f66ac54ef05c59c7e2c0e792d851f9d1921837c1dc7a165b1",
@@ -182,14 +182,14 @@
     "vendor/doomgeneric/doomgeneric/z_zone.c": "37b296f9ad28decc44b5bca9d38c6ea81ddbd8ab977c1d06f03fc7360e316423",
     "vendor/doomgeneric/doomgeneric/w_file_stdc.c": "515a68720dc0f4b3d66be0fd7831e5dc15d57d2015a2ff60613d26d120332237",
     "vendor/doomgeneric/doomgeneric/i_input.c": "c7cfc91d1edaefd66395f9293fbef5050ea2ad367fd9acc2afd4b4cbf213daa4",
-    "vendor/doomgeneric/doomgeneric/i_video.c": "8b9e1998f344f8af78d904a3e806817733fd0defcf6d54368b03f5c1f61a2eed",
-    "platform.c": "b54433e3ebc45254cd3533ac19bf27c86b55c86b8f6ad62e6371efc2522add62"
+    "vendor/doomgeneric/doomgeneric/i_video.c": "37f3d5bd013f4f10bc453792b9b90872a8ef2ce263a31c5b89a9863d5a99abf5",
+    "platform.c": "51ee45adb52fb71b3711b857d5af370519195be92c087dc58c687ecda8b1d0f1"
   },
   "headerOverlays": [
     {
       "path": "vendor/doomgeneric/doomgeneric/doomgeneric.h",
       "source": "engine/doomgeneric.h",
-      "sha256": "f9bcb7f85c6b9f97e5f3ca3a1f512b9d84b2459af0e9ab84134e0d3ebf050b0d",
+      "sha256": "ac82f8d81479f30f5dbcd1962baeafd172701544582617f00cc51f01cce90271",
       "originalSha256": "d24861dd7aa75d283226724f710ae4226839898bc61b986a0602df7df19df148",
       "license": "GPL-3.0-only",
       "provenance": "Project-owned interface"
@@ -203,8 +203,37 @@
       "provenance": "Project-owned required feature and package constants"
     }
   ],
+  "sourceOverlays": [
+    {
+      "path": "vendor/doomgeneric/doomgeneric/i_video.c",
+      "source": "engine/video.c",
+      "sourceSha256": "37f3d5bd013f4f10bc453792b9b90872a8ef2ce263a31c5b89a9863d5a99abf5",
+      "sha256": "37f3d5bd013f4f10bc453792b9b90872a8ef2ce263a31c5b89a9863d5a99abf5",
+      "originalSha256": "8b9e1998f344f8af78d904a3e806817733fd0defcf6d54368b03f5c1f61a2eed",
+      "license": "GPL-2.0-or-later AND GPL-3.0-only",
+      "provenance": "Indexed adapter derived from pinned i_video.c"
+    },
+    {
+      "path": "vendor/doomgeneric/doomgeneric/i_sound.c",
+      "source": "engine/audio.c",
+      "sourceSha256": "639a3d842f54603c658e644f127b8baefa5a7340abdf2230251400a42e174e7b",
+      "sha256": "639a3d842f54603c658e644f127b8baefa5a7340abdf2230251400a42e174e7b",
+      "originalSha256": "715918bc37b927c9426f37c3565d58d0f9f7bb517791b88b673820cc768572ee",
+      "license": "GPL-2.0-or-later AND GPL-3.0-only",
+      "provenance": "Direct host sound backend preserving pinned I_* interface"
+    },
+    {
+      "path": "vendor/doomgeneric/doomgeneric/g_game.c",
+      "source": "engine/input.patch",
+      "sourceSha256": "d705a2892d595285fee6d0a2cc0ba79550b0fc58c23066656c51e0ab4e51015e",
+      "sha256": "0dd7fa80183cdbe9c684c182c47964425ade26bb218ae86873d8e310ed3b20cb",
+      "originalSha256": "88d13781006089e80f8d1e4c1bea9fe6934f1314c290a1f379fc8155c3268123",
+      "license": "GPL-2.0-or-later AND GPL-3.0-only",
+      "provenance": "Bounded additive motion patch to pinned G_Responder"
+    }
+  ],
   "compilerDependencies": {
-    "platform.c": "b54433e3ebc45254cd3533ac19bf27c86b55c86b8f6ad62e6371efc2522add62",
+    "platform.c": "51ee45adb52fb71b3711b857d5af370519195be92c087dc58c687ecda8b1d0f1",
     "vendor/doomgeneric/doomgeneric/am_map.c": "4d62b1c824f161f84efdc6fb7dfd3c02123a532f28f5296e0eef9c79778aee65",
     "vendor/doomgeneric/doomgeneric/am_map.h": "1755affedbe06d36901c5d4754f931ddd214f28ac6625706eb56533925f4651d",
     "vendor/doomgeneric/doomgeneric/config.h": "b037f90a741f06b4e7270eedf8413bc0c76e50d4565b545ce6d0f55a19a4a356",
@@ -232,7 +261,7 @@
     "vendor/doomgeneric/doomgeneric/doomdef.c": "56e23ec1235d7478f64577ac349f9fad92a9fe6f77a0197630d6319f0838b02a",
     "vendor/doomgeneric/doomgeneric/doomdef.h": "87eaafe4d3366fe89924c8649c45b91fe89b6780a17f655e90c8a1d77b318a77",
     "vendor/doomgeneric/doomgeneric/doomfeatures.h": "01fd54d8060c650933f1d65c90fbd04355637b9ec66108e65cda0ef1bba4b929",
-    "vendor/doomgeneric/doomgeneric/doomgeneric.h": "f9bcb7f85c6b9f97e5f3ca3a1f512b9d84b2459af0e9ab84134e0d3ebf050b0d",
+    "vendor/doomgeneric/doomgeneric/doomgeneric.h": "ac82f8d81479f30f5dbcd1962baeafd172701544582617f00cc51f01cce90271",
     "vendor/doomgeneric/doomgeneric/doomkeys.h": "9bacfdc85b2003913b8a571c0762226d07e5e303dbdaa6c64887a194a4279ba2",
     "vendor/doomgeneric/doomgeneric/doomstat.c": "fa9332d64d0278e8eaa1481e18175b5b06d012af9e3f56a72edf823401a473bc",
     "vendor/doomgeneric/doomgeneric/doomstat.h": "a4c71dc810f4ac7b23a881a03566b4427356f7d59de37d5ddd38b43069c1f1a5",
@@ -243,7 +272,7 @@
     "vendor/doomgeneric/doomgeneric/f_finale.h": "8b1d4777e91f0f8be1c97475698701e0f17013d00c394cb6a2cfbb87f46b9d62",
     "vendor/doomgeneric/doomgeneric/f_wipe.c": "60969b7843a0eb0483f549abff2c4fcd20ccfeafc5ace8817836d1e895819fa0",
     "vendor/doomgeneric/doomgeneric/f_wipe.h": "e3e769803e2998aab83a6f98634654ce76f9c51aa6c7c551c4489deac5a2e041",
-    "vendor/doomgeneric/doomgeneric/g_game.c": "88d13781006089e80f8d1e4c1bea9fe6934f1314c290a1f379fc8155c3268123",
+    "vendor/doomgeneric/doomgeneric/g_game.c": "0dd7fa80183cdbe9c684c182c47964425ade26bb218ae86873d8e310ed3b20cb",
     "vendor/doomgeneric/doomgeneric/g_game.h": "b808b2ca10e734e22bef8591b0124d9ff4a4ef808ac12a6170189b4ef96c0c90",
     "vendor/doomgeneric/doomgeneric/hu_lib.c": "fa6fa03cab0645248aeb16400ced25f9b8d52cadb9bf988ec9a6e2dcac228018",
     "vendor/doomgeneric/doomgeneric/hu_lib.h": "6ce06bc30e0275d8c77ebbf1b70d581f93594ead3efd2a0d84dcc8d00394fea5",
@@ -258,14 +287,14 @@
     "vendor/doomgeneric/doomgeneric/i_joystick.h": "1980f8481b417416d048ad03968058f0ff0cce9700e10f1bafd8e965190a80d1",
     "vendor/doomgeneric/doomgeneric/i_scale.c": "f9dad27d7cae5ca6a63c87570c359d40e35002fb499c7d8a2e58ebb291a93e92",
     "vendor/doomgeneric/doomgeneric/i_scale.h": "23d43b89fea35c33ee14959643441dafe2ba478b66f0d9c25af170abf27d203f",
-    "vendor/doomgeneric/doomgeneric/i_sound.c": "715918bc37b927c9426f37c3565d58d0f9f7bb517791b88b673820cc768572ee",
+    "vendor/doomgeneric/doomgeneric/i_sound.c": "639a3d842f54603c658e644f127b8baefa5a7340abdf2230251400a42e174e7b",
     "vendor/doomgeneric/doomgeneric/i_sound.h": "b0a63a0fb482e767aa7812f5f7db3c66883feda084a30ec59abda10abc314a5e",
     "vendor/doomgeneric/doomgeneric/i_swap.h": "b8e773577839ccb51c0c9bf7232e9c174ec32e44c9573b1b38cc3337e2d0ad45",
     "vendor/doomgeneric/doomgeneric/i_system.c": "e547a31d179f5aeb3a377f4d4fe22d46d212e737d2dedde8b64b0d253a4d71f9",
     "vendor/doomgeneric/doomgeneric/i_system.h": "19084cfd6ffb7b69516cb62916c2a510ace67545f17dd6fb673be848f1d81d9e",
     "vendor/doomgeneric/doomgeneric/i_timer.c": "cf59e0db8d0ce9cefeb22643141a8983cea3668f16bae2bf009c58979c3b5cb3",
     "vendor/doomgeneric/doomgeneric/i_timer.h": "39449001def04dbd4984be2ea42ed48e3a4ba1e0b10fdb43e43d9e18b23f5081",
-    "vendor/doomgeneric/doomgeneric/i_video.c": "8b9e1998f344f8af78d904a3e806817733fd0defcf6d54368b03f5c1f61a2eed",
+    "vendor/doomgeneric/doomgeneric/i_video.c": "37f3d5bd013f4f10bc453792b9b90872a8ef2ce263a31c5b89a9863d5a99abf5",
     "vendor/doomgeneric/doomgeneric/i_video.h": "c3321fc943e421a9a889509b7a2a7ee5b6a848c8fee4ecaab746c66588c15a3d",
     "vendor/doomgeneric/doomgeneric/info.c": "43ed8b32ecd053e26b485a5443d8c11d4cf302377d5f62655d302964c90e2a0f",
     "vendor/doomgeneric/doomgeneric/info.h": "7ddb348b1f09c500446fb7e8c1e6dd3eec715f3a01e1fdee211ad3b0ec9516df",

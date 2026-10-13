@@ -1,0 +1,383 @@
+{
+  "imports": [
+    [
+      "hibi",
+      "sfx_stop",
+      [
+        127
+      ],
+      []
+    ],
+    [
+      "hibi",
+      "music_stop",
+      [],
+      []
+    ],
+    [
+      "hibi",
+      "sfx_params",
+      [
+        127,
+        127,
+        127
+      ],
+      []
+    ],
+    [
+      "hibi",
+      "sfx_start",
+      [
+        127,
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "hibi",
+      "sfx_playing",
+      [
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "hibi",
+      "music_volume",
+      [
+        127
+      ],
+      []
+    ],
+    [
+      "hibi",
+      "music_pause",
+      [],
+      []
+    ],
+    [
+      "hibi",
+      "music_resume",
+      [],
+      []
+    ],
+    [
+      "hibi",
+      "music_register",
+      [
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "hibi",
+      "music_unregister",
+      [
+        127
+      ],
+      []
+    ],
+    [
+      "hibi",
+      "music_play",
+      [
+        127,
+        127
+      ],
+      []
+    ],
+    [
+      "hibi",
+      "clock_ms",
+      [],
+      [
+        127
+      ]
+    ],
+    [
+      "hibi",
+      "sleep_ms",
+      [
+        127
+      ],
+      []
+    ],
+    [
+      "hibi",
+      "draw_indexed",
+      [
+        127,
+        127
+      ],
+      []
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_close",
+      [
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_fdstat_get",
+      [
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_fdstat_set_flags",
+      [
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_prestat_get",
+      [
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_prestat_dir_name",
+      [
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_read",
+      [
+        127,
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_seek",
+      [
+        127,
+        126,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "fd_write",
+      [
+        127,
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "path_create_directory",
+      [
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "path_open",
+      [
+        127,
+        127,
+        127,
+        127,
+        127,
+        126,
+        126,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "path_remove_directory",
+      [
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "path_rename",
+      [
+        127,
+        127,
+        127,
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "path_unlink_file",
+      [
+        127,
+        127,
+        127
+      ],
+      [
+        127
+      ]
+    ],
+    [
+      "wasi_snapshot_preview1",
+      "proc_exit",
+      [
+        127
+      ],
+      []
+    ]
+  ],
+  "exports": [
+    {
+      "name": "memory",
+      "kind": 2,
+      "signature": null
+    },
+    {
+      "name": "_initialize",
+      "kind": 0,
+      "signature": {
+        "parameters": [],
+        "results": []
+      }
+    },
+    {
+      "name": "doom_mouse",
+      "kind": 0,
+      "signature": {
+        "parameters": [
+          127
+        ],
+        "results": [
+          127
+        ]
+      }
+    },
+    {
+      "name": "doom_mouse_reset",
+      "kind": 0,
+      "signature": {
+        "parameters": [],
+        "results": []
+      }
+    },
+    {
+      "name": "doom_key",
+      "kind": 0,
+      "signature": {
+        "parameters": [
+          127,
+          127
+        ],
+        "results": [
+          127
+        ]
+      }
+    },
+    {
+      "name": "doom_init",
+      "kind": 0,
+      "signature": {
+        "parameters": [],
+        "results": []
+      }
+    },
+    {
+      "name": "doom_tick",
+      "kind": 0,
+      "signature": {
+        "parameters": [],
+        "results": []
+      }
+    },
+    {
+      "name": "doom_snapshot",
+      "kind": 0,
+      "signature": {
+        "parameters": [],
+        "results": [
+          127
+        ]
+      }
+    }
+  ],
+  "memories": [
+    {
+      "initial": 512,
+      "maximum": 512
+    }
+  ],
+  "tables": [
+    {
+      "element": 112,
+      "initial": 163,
+      "maximum": 163
+    }
+  ],
+  "start": null
+}

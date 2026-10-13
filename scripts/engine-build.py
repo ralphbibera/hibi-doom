@@ -46,6 +46,28 @@ for name, contents in sorted(sources.items()):
     destination.write_bytes(contents)
     destination.chmod(0o755 if name.endswith('.sh') else inventory['modes'][name])
 (source_root / 'platform.c').write_bytes((root / 'engine/platform.c').read_bytes())
+source_overlays = []
+for original, owned in [('i_video.c', 'video.c'), ('i_sound.c', 'audio.c')]:
+    path = 'vendor/doomgeneric/doomgeneric/' + original
+    contents = (root / 'engine' / owned).read_bytes()
+    (source_root / path).write_bytes(contents)
+    source_overlays.append({'path': path, 'source': 'engine/' + owned,
+                            'sourceSha256': hashlib.sha256(contents).hexdigest(),
+                            'sha256': hashlib.sha256(contents).hexdigest(),
+                            'originalSha256': inventory['files'][path],
+                            'license': 'GPL-2.0-or-later AND GPL-3.0-only',
+                            'provenance': 'Indexed adapter derived from pinned i_video.c' if original == 'i_video.c'
+                                          else 'Direct host sound backend preserving pinned I_* interface'})
+input_patch = (root / 'engine/input.patch').read_bytes()
+subprocess.run(['patch', '--batch', '--forward', '-p0'], input=input_patch,
+               cwd=source_root, check=True)
+input_path = 'vendor/doomgeneric/doomgeneric/g_game.c'
+source_overlays.append({'path': input_path, 'source': 'engine/input.patch',
+                        'sourceSha256': hashlib.sha256(input_patch).hexdigest(),
+                        'sha256': hashlib.sha256((source_root / input_path).read_bytes()).hexdigest(),
+                        'originalSha256': inventory['files'][input_path],
+                        'license': 'GPL-2.0-or-later AND GPL-3.0-only',
+                        'provenance': 'Bounded additive motion patch to pinned G_Responder'})
 header_overlays = []
 for name in ['doomgeneric.h', 'config.h']:
     header_path = 'vendor/doomgeneric/doomgeneric/' + name
@@ -118,6 +140,7 @@ command = [*compile_flags, '-mexec-model=reactor',
            '-Wl,--initial-memory=33554432', '-Wl,--max-memory=33554432',
            '-Wl,-z,stack-size=1048576', '-Wl,--export=doom_init', '-Wl,--export=doom_tick',
            '-Wl,--export=doom_key', '-Wl,--export=doom_snapshot',
+           '-Wl,--export=doom_mouse', '-Wl,--export=doom_mouse_reset',
            '-Wl,-Map=' + str(work / 'doom.map'), '-o', str(output)]
 run(command)
 mapping = (work / 'doom.map').read_text()
@@ -135,11 +158,12 @@ record = {'bytes': output.stat().st_size, 'sha256': hashlib.sha256(output.read_b
           'compiledSources': {name: hashlib.sha256((source_root / name).read_bytes()).hexdigest()
                               for name in [*c_files, 'platform.c']},
           'headerOverlays': header_overlays,
+          'sourceOverlays': source_overlays,
           'compilerDependencies': dependency_record,
           'excludedSources': [str(doom / name) for name in ['dummy.c', 'doomgeneric.c']]}
 (work / 'build.json').write_text(json.dumps(record, indent=2) + '\n')
 linked_record = {'schema': 1, 'engineSha256': record['sha256'],
                  **{key: record[key] for key in ['platformSha256', 'linked', 'reactor',
-                                                'compiledSources', 'headerOverlays', 'compilerDependencies', 'excludedSources']}}
+                                                'compiledSources', 'headerOverlays', 'sourceOverlays', 'compilerDependencies', 'excludedSources']}}
 (work / 'linked.json').write_text(json.dumps(linked_record, indent=2) + '\n')
 print(json.dumps({'engine': str(output), 'bytes': record['bytes'], 'sha256': record['sha256']}))

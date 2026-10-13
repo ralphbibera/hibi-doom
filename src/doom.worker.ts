@@ -1,15 +1,17 @@
 import { DoomEngine } from './engine.ts'
-import { parseWorkerCommand, type WorkerReply } from './model.ts'
+import { parseWorkerCommand, type WorkerMessage } from './model.ts'
 
 declare const self: {
   addEventListener(
     type: 'message',
     listener: (event: MessageEvent<unknown>) => void,
   ): void
-  postMessage(reply: WorkerReply, transfer: Transferable[]): void
+  postMessage(reply: WorkerMessage, transfer: Transferable[]): void
 }
 
-const engine = new DoomEngine()
+const engine = new DoomEngine(undefined, (audio) =>
+  self.postMessage({ kind: 'audio', audio }, []),
+)
 self.addEventListener('message', (event) => {
   void respond(event.data)
 })

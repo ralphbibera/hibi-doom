@@ -1,17 +1,17 @@
 {
   "schema": 2,
   "engine": {
-    "bytes": 456566,
-    "sha256": "9f49010fb7ea8111346f315a6261806268f4fc70dd9b3d951b9a8eca3f3fbf82",
+    "bytes": 456114,
+    "sha256": "33aa16f84b0166fcc1ff150ee90f12e89593cacbd005fd3b7f35c88eecb01416",
     "chunks": [
       {
         "path": "assets/engine/000.json",
-        "jsonBytes": 608769,
-        "decodedBytes": 456566,
-        "sha256": "9f49010fb7ea8111346f315a6261806268f4fc70dd9b3d951b9a8eca3f3fbf82"
+        "jsonBytes": 608165,
+        "decodedBytes": 456114,
+        "sha256": "33aa16f84b0166fcc1ff150ee90f12e89593cacbd005fd3b7f35c88eecb01416"
       }
     ],
-    "abi": "doomgeneric-wasi-v1"
+    "abi": "doomgeneric-wasi-v2"
   },
   "iwad": {
     "bytes": 4196020,
@@ -25,22 +25,28 @@
     }
   },
   "source": {
-    "bytes": 3120915,
-    "sha256": "bead285f8452cbb68744c154a851a03576b5caebd7b228db35b3b3e544076a00",
+    "bytes": 3151729,
+    "sha256": "5c565f10fac02cf27be57fed50845cf9080c50c148e2e4e8ee5a86a22d6e00ed",
     "chunks": [
       {
         "path": "assets/source/000.json",
-        "jsonBytes": 4161233,
-        "decodedBytes": 3120915,
-        "sha256": "bead285f8452cbb68744c154a851a03576b5caebd7b228db35b3b3e544076a00"
+        "jsonBytes": 4194317,
+        "decodedBytes": 3145728,
+        "sha256": "061a766cc830b65bd2647130a7dd153d1563e4c0d425c2abc415ad9aba4972ba"
+      },
+      {
+        "path": "assets/source/001.json",
+        "jsonBytes": 8017,
+        "decodedBytes": 6001,
+        "sha256": "39df77aaaa846620c25fc339760d8b6b243e58a030c053485a92a8a321803141"
       }
     ],
     "archive": "tar.gz",
-    "exportName": "hibi-doom-0.3.0-source.tar.gz"
+    "exportName": "hibi-doom-0.4.0-source.tar.gz"
   },
   "notices": {
     "path": "LICENSES.md",
-    "bytes": 122467,
-    "sha256": "1a0cb17f087f0848fba5b7e2d6b4240e3cd76883dd2c86368c1c17b2fea7b020"
+    "bytes": 122611,
+    "sha256": "4170a918b6ad10a5a74d1c59ad615784a39294c61f1df8b3790052993d6250d0"
   }
 }

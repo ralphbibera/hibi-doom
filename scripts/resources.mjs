@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { lstat, readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import packageInfo from '../package.json' with { type: 'json' }
 import { readTarGz, tarGz } from './archive.mjs'
 import { root } from './tooling.mjs'
 
@@ -88,9 +89,13 @@ export async function preferredFiles() {
     'biome.json',
     '.gitignore',
     'engine/platform.c',
+    'engine/video.c',
+    'engine/audio.c',
+    'engine/input.patch',
     'engine/doomgeneric.h',
     'engine/config.h',
     'engine/pins.json',
+    'engine/abi.json',
     'engine/upstream-inventory.json',
     'engine/linked.json',
   ])
@@ -131,6 +136,26 @@ export async function packageResources() {
     )
       throw new Error('The engine does not match its owned header overlays.')
   }
+  const overlays = linked.sourceOverlays
+  if (!Array.isArray(overlays) || overlays.length !== 3)
+    throw new Error('The engine source overlay inventory is incomplete.')
+  for (const [index, [original, owned]] of [
+    ['i_video.c', 'video.c'],
+    ['i_sound.c', 'audio.c'],
+    ['g_game.c', 'input.patch'],
+  ].entries()) {
+    const overlay = overlays[index]
+    const path = `vendor/doomgeneric/doomgeneric/${original}`
+    if (
+      overlay.source !== `engine/${owned}` ||
+      overlay.path !== path ||
+      overlay.sourceSha256 !==
+        digest(await readFile(join(root, overlay.source))) ||
+      overlay.originalSha256 !== upstreamInventory.files[path] ||
+      linked.compiledSources[path] !== overlay.sha256
+    )
+      throw new Error('The engine does not match its owned source overlays.')
+  }
   const files = new Map()
   const engine = {
     ...chunkArtifact(
@@ -138,7 +163,7 @@ export async function packageResources() {
       'engine',
       files,
     ),
-    abi: 'doomgeneric-wasi-v1',
+    abi: 'doomgeneric-wasi-v2',
   }
   const iwad = pins.iwad
   const licenseNames = (await readdir(join(root, 'licenses'))).sort()
@@ -152,7 +177,7 @@ export async function packageResources() {
     '\n```\n\n',
     '## Third-party notices\n\n',
     'The selected Doom core sources retain their GPL version 2 or later grants. The SHA-1 implementation from GnuPG is copyright the Free Software Foundation, Inc., 1998-2001, and retains its GPL version 3 or later grant. Their original source notices remain in effect.\n\n',
-    'The source archive preserves the original unselected dummy.c, doomgeneric.c, doomgeneric.h, and config.h with their upstream notices. The bundled engine uses project-owned startup code, a framebuffer interface, and build configuration instead.\n\n',
+    'The source archive preserves the original upstream source and notices, including dummy.c, doomgeneric.c, i_video.c, i_sound.c, g_game.c, doomgeneric.h, and config.h. The bundled engine uses owned startup, indexed graphics, direct sound, interface and configuration overlays, and a bounded input patch. Doom-derived changes retain the original grants. Hibi changes use GPL version 3 only.\n\n',
     'The unchanged Doom 1.9 shareware IWAD has separate id Software terms. It is downloaded free of charge from a separate public feed on first Play and is absent from this code package and corresponding source. The compiler runtime uses Apache 2.0 with the LLVM exception. WASI libc changes use its MIT option. The build-only source archive encoder retains its MIT notice.\n',
   ]
   for (const name of licenseNames)
@@ -208,7 +233,7 @@ export async function packageResources() {
   const source = {
     ...chunkArtifact(compressed, 'source', files),
     archive: 'tar.gz',
-    exportName: 'hibi-doom-0.3.0-source.tar.gz',
+    exportName: `hibi-doom-${packageInfo.version}-source.tar.gz`,
   }
   const bundle = {
     schema: 2,
@@ -225,6 +250,8 @@ export async function packageResources() {
   const manifest = JSON.parse(
     await readFile(join(root, 'scripts/manifest.json'), 'utf8'),
   )
+  if (manifest.version !== packageInfo.version)
+    throw new Error('Addon versions do not match.')
   manifest.licenses = [
     {
       id: 'hibi-doom-engine',

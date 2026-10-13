@@ -18,7 +18,7 @@ import { performance } from 'node:perf_hooks'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { readTarGz } from '../scripts/archive.mjs'
-import { parseBundle } from '../src/bundle.ts'
+import { parseBundle, sourceExportName } from '../src/bundle.ts'
 import { canvasEvidence } from './pixels.mjs'
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -637,7 +637,7 @@ export async function runUrlInstallAcceptance(options = {}) {
   const fixture = join(run, 'fixture')
   const profile = join(fixture, 'profile')
   const notePath = join(fixture, 'verification.md')
-  const sourcePath = join(fixture, 'hibi-doom-0.3.0-source.tar.gz')
+  const sourcePath = join(fixture, sourceExportName)
   const conflictPath = join(fixture, 'existing-source.tar.gz')
   const lateSourcePath = join(fixture, 'late-source.tar.gz')
   const cachedSourcePath = join(fixture, 'cached-source.tar.gz')
@@ -1694,6 +1694,14 @@ export async function runUrlInstallAcceptance(options = {}) {
           'scripts/engine-build.py',
           'scripts/build.mjs',
           'engine/platform.c',
+          'engine/video.c',
+          'engine/audio.c',
+          'engine/input.patch',
+          'engine/abi.json',
+          'src/audio.ts',
+          'src/audio-bank.ts',
+          'src/audio-scene.ts',
+          'src/music.ts',
           'engine/config.h',
           'src/iwad.ts',
           'engine/vendor/doomgeneric/doomgeneric/d_main.c',
@@ -2568,7 +2576,7 @@ export async function runUrlInstallAcceptance(options = {}) {
         assert.equal(draftBefore.ephemeral, false)
         await page.getByRole('tab', { name: 'Doom', exact: true }).click()
         await page.getByRole('button', { name: 'Resume', exact: true }).click()
-        await canvas().click()
+        await canvas().focus()
         const frameBefore = await advance(300)
         const workersBefore = await snapshotRenderer()
         const eventsBefore = [...ownedWorkers.values()].filter(
@@ -2607,7 +2615,7 @@ export async function runUrlInstallAcceptance(options = {}) {
         assert.equal(await editor().textContent(), draftBefore.markdown)
         await page.getByRole('tab', { name: 'Doom', exact: true }).click()
         await focusMain()
-        await canvas().click()
+        await canvas().focus()
         const resumed = await assertProgress(frameBefore)
         assert.equal(resumed.ammoSha256, level.ammoSha256)
         await screenshot('quit-canceled-same-session')

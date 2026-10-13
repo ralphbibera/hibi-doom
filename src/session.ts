@@ -1,8 +1,15 @@
+import { type AudioScene, audioNotificationBudget } from './audio-scene.ts'
 import {
+  parseAudioNotice,
   parseWorkerReply,
   type WorkerReply,
   type WorkerRequest,
 } from './model.ts'
+
+interface SessionEvents {
+  audio?(scene: AudioScene): void
+  disposed?(error: Error): void
+}
 
 export interface GameWorker {
   postMessage(message: unknown, transfer: Transferable[]): void
@@ -27,6 +34,7 @@ export interface GameWorker {
 
 interface Pending {
   kind: WorkerRequest['kind']
+  notifications: number
   resolve(reply: WorkerReply): void
   reject(error: Error): void
   timer: ReturnType<typeof setTimeout>
@@ -38,10 +46,16 @@ export class GameSession {
   private pending = new Map<number, Pending>()
   private failure: Error | null = null
   private timeoutMs: number
+  private events: SessionEvents
 
-  constructor(worker: GameWorker, timeoutMs = 15000) {
+  constructor(
+    worker: GameWorker,
+    timeoutMs = 15000,
+    events: SessionEvents = {},
+  ) {
     this.worker = worker
     this.timeoutMs = timeoutMs
+    this.events = events
     worker.addEventListener('message', this.receive)
     worker.addEventListener('error', this.workerError)
     worker.addEventListener('messageerror', this.workerError)
@@ -73,7 +87,13 @@ export class GameSession {
           new Error('Doom stopped responding. Close and reopen the game.'),
         )
       }, this.timeoutMs)
-      this.pending.set(id, { kind: input.kind, resolve, reject, timer })
+      this.pending.set(id, {
+        kind: input.kind,
+        notifications: 0,
+        resolve,
+        reject,
+        timer,
+      })
       try {
         worker.postMessage({ id, ...input }, transfer)
       } catch (error) {
@@ -100,6 +120,7 @@ export class GameSession {
       entry.reject(error)
     }
     this.pending.clear()
+    this.events.disposed?.(error)
   }
 
   private workerError = () => {
@@ -110,6 +131,18 @@ export class GameSession {
 
   private receive = (event: MessageEvent<unknown>) => {
     try {
+      const notice = parseAudioNotice(event.data)
+      if (notice) {
+        const operation = this.pending.values().next().value
+        if (!operation)
+          throw new Error(
+            'Doom returned audio without an outstanding operation.',
+          )
+        if (++operation.notifications > audioNotificationBudget)
+          throw new Error('Doom exceeded its sound notification budget.')
+        this.events.audio?.(notice.audio)
+        return
+      }
       const reply = parseWorkerReply(event.data)
       const entry = this.pending.get(reply.id)
       if (!entry) throw new Error('Doom returned an unexpected request ID.')

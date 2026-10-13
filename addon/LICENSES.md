@@ -688,7 +688,7 @@ Public License instead of this License.  But first, please read
 
 The selected Doom core sources retain their GPL version 2 or later grants. The SHA-1 implementation from GnuPG is copyright the Free Software Foundation, Inc., 1998-2001, and retains its GPL version 3 or later grant. Their original source notices remain in effect.
 
-The source archive preserves the original unselected dummy.c, doomgeneric.c, doomgeneric.h, and config.h with their upstream notices. The bundled engine uses project-owned startup code, a framebuffer interface, and build configuration instead.
+The source archive preserves the original upstream source and notices, including dummy.c, doomgeneric.c, i_video.c, i_sound.c, g_game.c, doomgeneric.h, and config.h. The bundled engine uses owned startup, indexed graphics, direct sound, interface and configuration overlays, and a bounded input patch. Doom-derived changes retain the original grants. Hibi changes use GPL version 3 only.
 
 The unchanged Doom 1.9 shareware IWAD has separate id Software terms. It is downloaded free of charge from a separate public feed on first Play and is absent from this code package and corresponding source. The compiler runtime uses Apache 2.0 with the LLVM exception. WASI libc changes use its MIT option. The build-only source archive encoder retains its MIT notice.
 

@@ -9,6 +9,22 @@
 .hibi-doom-controls {
   padding: 8px 12px;
   flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+.hibi-doom-volume {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+}
+.hibi-doom-volume input {
+  width: 80px;
+}
+.hibi-doom-audio-status {
+  margin: 0;
+  padding: 4px 12px;
+  font-size: var(--text-sm);
+  color: var(--muted);
 }
 .hibi-doom-legal {
   flex: 0 0 auto;

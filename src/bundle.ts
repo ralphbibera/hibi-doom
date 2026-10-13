@@ -1,4 +1,7 @@
 import pins from '../engine/pins.json' with { type: 'json' }
+import packageInfo from '../package.json' with { type: 'json' }
+
+export const sourceExportName = `hibi-doom-${packageInfo.version}-source.tar.gz`
 
 export interface Chunk {
   readonly path: string
@@ -13,11 +16,11 @@ export interface Artifact {
 }
 export interface DoomBundle {
   readonly schema: 2
-  readonly engine: Artifact & { readonly abi: 'doomgeneric-wasi-v1' }
+  readonly engine: Artifact & { readonly abi: 'doomgeneric-wasi-v2' }
   readonly iwad: typeof pins.iwad
   readonly source: Artifact & {
     readonly archive: 'tar.gz'
-    readonly exportName: 'hibi-doom-0.3.0-source.tar.gz'
+    readonly exportName: string
   }
   readonly notices: {
     readonly path: 'LICENSES.md'
@@ -107,7 +110,7 @@ export function parseBundle(input: unknown): DoomBundle {
   const notices = record(value.notices, ['path', 'bytes', 'sha256'])
   if (
     value.schema !== 2 ||
-    engine.value.abi !== 'doomgeneric-wasi-v1' ||
+    engine.value.abi !== 'doomgeneric-wasi-v2' ||
     engine.bytes > 1024 * 1024 ||
     iwad.edition !== pins.iwad.edition ||
     iwad.bytes !== pins.iwad.bytes ||
@@ -117,7 +120,7 @@ export function parseBundle(input: unknown): DoomBundle {
     feed.bytes !== pins.iwad.feed.bytes ||
     feed.sha256 !== pins.iwad.feed.sha256 ||
     source.value.archive !== 'tar.gz' ||
-    source.value.exportName !== 'hibi-doom-0.3.0-source.tar.gz' ||
+    source.value.exportName !== sourceExportName ||
     notices.path !== 'LICENSES.md'
   )
     throw new Error('Unsupported Doom bundle.')
@@ -128,7 +131,7 @@ export function parseBundle(input: unknown): DoomBundle {
   })
   return Object.freeze({
     schema: 2,
-    engine: Object.freeze({ ...common(engine), abi: 'doomgeneric-wasi-v1' }),
+    engine: Object.freeze({ ...common(engine), abi: 'doomgeneric-wasi-v2' }),
     iwad: Object.freeze({
       ...pins.iwad,
       feed: Object.freeze({ ...pins.iwad.feed }),
@@ -136,7 +139,7 @@ export function parseBundle(input: unknown): DoomBundle {
     source: Object.freeze({
       ...common(source),
       archive: 'tar.gz',
-      exportName: 'hibi-doom-0.3.0-source.tar.gz',
+      exportName: sourceExportName,
     }),
     notices: Object.freeze({
       path: 'LICENSES.md',

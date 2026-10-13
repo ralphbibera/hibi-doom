@@ -15,10 +15,10 @@
 #include "m_argv.h"
 #include "m_controls.h"
 #include "net_client.h"
+#include "d_event.h"
 
 extern void D_DoomMain(void);
 
-uint32_t *DG_ScreenBuffer;
 boolean net_client_connected = false;
 boolean drone = false;
 
@@ -26,13 +26,37 @@ __attribute__((import_module("hibi"), import_name("clock_ms")))
 extern uint32_t host_clock_ms(void);
 __attribute__((import_module("hibi"), import_name("sleep_ms")))
 extern void host_sleep_ms(uint32_t ms);
-__attribute__((import_module("hibi"), import_name("draw_rgba")))
-extern void host_draw_rgba(const unsigned char *pixels);
+__attribute__((import_module("hibi"), import_name("draw_indexed")))
+extern void host_draw_indexed(const unsigned char *indices,
+                              const unsigned char *palette_rgb);
 
-static unsigned char rgba[640 * 400 * 4];
 static uint16_t keys[64];
 static unsigned int key_read, key_write, key_count;
 static int snapshot[16];
+static int pending_mouse;
+extern int mousex, mousey;
+
+int doom_mouse(int delta)
+{
+    if (delta < -2048 || delta > 2048) return -1;
+    pending_mouse += delta;
+    if (pending_mouse > 2048) pending_mouse = 2048;
+    else if (pending_mouse < -2048) pending_mouse = -2048;
+    return 0;
+}
+
+void doom_mouse_reset(void)
+{
+    pending_mouse = mousex = mousey = 0;
+}
+
+void DG_PollMouse(void)
+{
+    if (!pending_mouse) return;
+    event_t event = { ev_mouse, 0, pending_mouse, 0, 0 };
+    pending_mouse = 0;
+    D_PostEvent(&event);
+}
 
 int system(const char *command)
 {
@@ -46,16 +70,10 @@ void DG_SetWindowTitle(const char *title) { (void) title; }
 uint32_t DG_GetTicksMs(void) { return host_clock_ms(); }
 void DG_SleepMs(uint32_t ms) { host_sleep_ms(ms); }
 
-void DG_DrawFrame(void)
+void DG_DrawIndexedFrame(const unsigned char *indices,
+                        const unsigned char *palette_rgb)
 {
-    for (unsigned int i = 0; i < 640 * 400; i++) {
-        uint32_t p = DG_ScreenBuffer[i];
-        rgba[4 * i] = p >> 16;
-        rgba[4 * i + 1] = p >> 8;
-        rgba[4 * i + 2] = p;
-        rgba[4 * i + 3] = 255;
-    }
-    host_draw_rgba(rgba);
+    host_draw_indexed(indices, palette_rgb);
 }
 
 int DG_GetKey(int *pressed, unsigned char *key)
@@ -82,14 +100,12 @@ int doom_key(int pressed, unsigned int key)
 void doom_init(void)
 {
     static char *args[] = { "hibi-doom", "-iwad", "doom1.wad", "-mb", "8",
-                            "-nosound", "-nojoy", "-nomouse" };
+                            "-nojoy" };
     puts("Hibi Doom engine. Copyright id Software, Simon Howard, and contributors.");
     puts("GNU GPL version 3 only. ABSOLUTELY NO WARRANTY.");
     puts("Redistribution permitted under GPL. License and complete source accompany this engine.");
     myargc = sizeof(args) / sizeof(args[0]);
     myargv = args;
-    DG_ScreenBuffer = malloc(DOOMGENERIC_RESX * DOOMGENERIC_RESY * sizeof(*DG_ScreenBuffer));
-    if (!DG_ScreenBuffer) I_Error("Could not allocate the Doom framebuffer.");
     DG_Init();
     D_DoomMain();
     key_fire = KEY_RCTRL;

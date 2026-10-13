@@ -1,12 +1,886 @@
 // doom:bundle
-var bundle_default = { schema: 2, engine: { bytes: 456566, sha256: "9f49010fb7ea8111346f315a6261806268f4fc70dd9b3d951b9a8eca3f3fbf82", chunks: [{ path: "assets/engine/000.json", jsonBytes: 608769, decodedBytes: 456566, sha256: "9f49010fb7ea8111346f315a6261806268f4fc70dd9b3d951b9a8eca3f3fbf82" }], abi: "doomgeneric-wasi-v1" }, iwad: { bytes: 4196020, sha256: "1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771", edition: "doom-1.9-shareware", license: "LicenseRef-DOOM-shareware", feed: { url: "https://gist.githubusercontent.com/ralphbibera/1a077d178d8544746423ddd84a2ca1ef/raw/8a5669e288bfa19ba9d08aaa0ba8be34f02113ef/manifest.json", bytes: 1715, sha256: "90215e77c9623360d404489c88826a5310fd2c5f566cb23e09184a0246ae56e1" } }, source: { bytes: 3120915, sha256: "bead285f8452cbb68744c154a851a03576b5caebd7b228db35b3b3e544076a00", chunks: [{ path: "assets/source/000.json", jsonBytes: 4161233, decodedBytes: 3120915, sha256: "bead285f8452cbb68744c154a851a03576b5caebd7b228db35b3b3e544076a00" }], archive: "tar.gz", exportName: "hibi-doom-0.3.0-source.tar.gz" }, notices: { path: "LICENSES.md", bytes: 122467, sha256: "1a0cb17f087f0848fba5b7e2d6b4240e3cd76883dd2c86368c1c17b2fea7b020" } };
+var bundle_default = { schema: 2, engine: { bytes: 456114, sha256: "33aa16f84b0166fcc1ff150ee90f12e89593cacbd005fd3b7f35c88eecb01416", chunks: [{ path: "assets/engine/000.json", jsonBytes: 608165, decodedBytes: 456114, sha256: "33aa16f84b0166fcc1ff150ee90f12e89593cacbd005fd3b7f35c88eecb01416" }], abi: "doomgeneric-wasi-v2" }, iwad: { bytes: 4196020, sha256: "1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771", edition: "doom-1.9-shareware", license: "LicenseRef-DOOM-shareware", feed: { url: "https://gist.githubusercontent.com/ralphbibera/1a077d178d8544746423ddd84a2ca1ef/raw/8a5669e288bfa19ba9d08aaa0ba8be34f02113ef/manifest.json", bytes: 1715, sha256: "90215e77c9623360d404489c88826a5310fd2c5f566cb23e09184a0246ae56e1" } }, source: { bytes: 3151729, sha256: "5c565f10fac02cf27be57fed50845cf9080c50c148e2e4e8ee5a86a22d6e00ed", chunks: [{ path: "assets/source/000.json", jsonBytes: 4194317, decodedBytes: 3145728, sha256: "061a766cc830b65bd2647130a7dd153d1563e4c0d425c2abc415ad9aba4972ba" }, { path: "assets/source/001.json", jsonBytes: 8017, decodedBytes: 6001, sha256: "39df77aaaa846620c25fc339760d8b6b243e58a030c053485a92a8a321803141" }], archive: "tar.gz", exportName: "hibi-doom-0.4.0-source.tar.gz" }, notices: { path: "LICENSES.md", bytes: 122611, sha256: "4170a918b6ad10a5a74d1c59ad615784a39294c61f1df8b3790052993d6250d0" } };
+
+// src/audio-scene.ts
+var audioNotificationBudget = 256;
+function record(raw, fields2) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw) || Object.keys(raw).length !== fields2.length || fields2.some((field) => !Object.hasOwn(raw, field)))
+    throw new Error("Invalid Doom audio scene fields.");
+  return raw;
+}
+function number(raw, limit = Number.MAX_SAFE_INTEGER, integral = true) {
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0 || raw > limit || integral && !Number.isSafeInteger(raw))
+    throw new Error("Invalid Doom audio scene value.");
+  return raw;
+}
+function parseAudioScene(raw) {
+  const value = record(raw, ["epoch", "revision", "at", "voices", "music"]);
+  const epoch = number(value.epoch);
+  const revision = number(value.revision);
+  const at = number(value.at, Number.MAX_SAFE_INTEGER, false);
+  if (!Array.isArray(value.voices) || value.voices.length !== 8)
+    throw new Error("Invalid Doom sound channels.");
+  const voices = value.voices.map((raw2, channel) => {
+    if (raw2 === null) return null;
+    const voice = record(raw2, [
+      "channel",
+      "generation",
+      "sample",
+      "startedAt",
+      "endsAt",
+      "volume",
+      "separation"
+    ]);
+    if (voice.channel !== channel)
+      throw new Error("Invalid Doom sound channel order.");
+    const startedAt = number(voice.startedAt, Number.MAX_SAFE_INTEGER, false);
+    const endsAt = number(voice.endsAt, Number.MAX_SAFE_INTEGER, false);
+    const generation = number(voice.generation);
+    if (generation === 0 || endsAt <= startedAt || endsAt - startedAt > 6e4 || startedAt > at)
+      throw new Error("Invalid Doom sound deadline.");
+    return {
+      channel,
+      generation,
+      sample: number(voice.sample, 4095),
+      startedAt,
+      endsAt,
+      volume: number(voice.volume, 127),
+      separation: number(voice.separation, 254)
+    };
+  });
+  let music;
+  if (value.music && typeof value.music === "object" && "kind" in value.music && value.music.kind === "stopped") {
+    record(value.music, ["kind"]);
+    music = { kind: "stopped" };
+  } else {
+    const state = record(value.music, [
+      "kind",
+      "generation",
+      "score",
+      "anchorAt",
+      "offsetMs",
+      "looping",
+      "volume"
+    ]);
+    if (state.kind !== "playing" && state.kind !== "paused" || typeof state.looping !== "boolean")
+      throw new Error("Invalid Doom music activity.");
+    const generation = number(state.generation);
+    const anchorAt = number(state.anchorAt, Number.MAX_SAFE_INTEGER, false);
+    if (generation === 0 || anchorAt > at)
+      throw new Error("Invalid Doom music anchor.");
+    music = {
+      kind: state.kind,
+      generation,
+      score: number(state.score, 4095),
+      anchorAt,
+      offsetMs: number(state.offsetMs, Number.MAX_SAFE_INTEGER, false),
+      looping: state.looping,
+      volume: number(state.volume, 127)
+    };
+  }
+  return { epoch, revision, at, voices, music };
+}
+function musicPosition(music, at) {
+  return music.offsetMs + (music.kind === "playing" ? Math.max(0, at - music.anchorAt) : 0);
+}
+
+// src/music.ts
+var channelDefaults = () => ({
+  program: 0,
+  bank: 0,
+  volume: 127,
+  expression: 127,
+  pan: 64,
+  bend: 0,
+  modulation: 0,
+  sustain: false,
+  soft: false
+});
+var ScoreState = class {
+  channels = Array.from({ length: 16 }, channelDefaults);
+  notes = /* @__PURE__ */ new Map();
+  apply(event) {
+    const channel = this.channels[event.channel];
+    if (!channel) throw new Error("Invalid MUS channel.");
+    if (event.kind === "on" && event.velocity > 0) {
+      const note = {
+        id: event.channel * 128 + event.key,
+        channel: event.channel,
+        key: event.key,
+        velocity: event.velocity,
+        program: channel.program,
+        tick: event.tick,
+        released: false
+      };
+      this.notes.set(note.id, note);
+      return { kind: "start", note };
+    }
+    if (event.kind === "off" || event.kind === "on") {
+      const id = event.channel * 128 + event.key;
+      const note = this.notes.get(id);
+      if (note && channel.sustain) {
+        note.released = true;
+        return { kind: "none" };
+      }
+      this.notes.delete(id);
+      return { kind: "release", ids: [id] };
+    }
+    if (event.kind === "pitch") channel.bend = event.bend;
+    else {
+      switch (event.control) {
+        case 0:
+          channel.program = event.value;
+          return { kind: "none" };
+        case 1:
+          channel.bank = event.value;
+          return { kind: "none" };
+        case 2:
+          channel.modulation = event.value;
+          break;
+        case 3:
+          channel.volume = event.value;
+          break;
+        case 4:
+          channel.pan = event.value;
+          break;
+        case 5:
+          channel.expression = event.value;
+          break;
+        case 8: {
+          channel.sustain = event.value >= 64;
+          if (channel.sustain) return { kind: "none" };
+          const ids = [...this.notes.values()].filter((note) => note.channel === event.channel && note.released).map((note) => note.id);
+          for (const id of ids) this.notes.delete(id);
+          return { kind: "release", ids };
+        }
+        case 9:
+          channel.soft = event.value >= 64;
+          break;
+        case 10:
+        case 11:
+        case 12:
+        case 13: {
+          const ids = [...this.notes.values()].filter((note) => note.channel === event.channel).map((note) => note.id);
+          for (const id of ids) {
+            const note = this.notes.get(id);
+            if (event.control !== 10 && channel.sustain && note)
+              note.released = true;
+            else this.notes.delete(id);
+          }
+          return event.control === 10 ? { kind: "kill", ids } : channel.sustain ? { kind: "none" } : { kind: "release", ids };
+        }
+        case 14: {
+          Object.assign(channel, {
+            expression: 127,
+            pan: 64,
+            bend: 0,
+            modulation: 0,
+            sustain: false,
+            soft: false
+          });
+          const ids = [...this.notes.values()].filter((note) => note.channel === event.channel && note.released).map((note) => note.id);
+          for (const id of ids) this.notes.delete(id);
+          return { kind: "release", ids };
+        }
+        default:
+          return { kind: "none" };
+      }
+    }
+    return { kind: "parameters", channel: event.channel };
+  }
+};
+var musicVoiceLimit = 24;
+var lookaheadSeconds = 0.12;
+var MusicOutput = class {
+  score = null;
+  generation = null;
+  state = new ScoreState();
+  voices = /* @__PURE__ */ new Set();
+  held = /* @__PURE__ */ new Map();
+  gain;
+  timer = null;
+  index = 0;
+  cycle = 0;
+  anchor = 0;
+  looping = false;
+  context;
+  bank;
+  failed;
+  constructor(context, destination, bank, failed) {
+    this.context = context;
+    this.bank = bank;
+    this.failed = failed;
+    this.gain = context.createGain();
+    this.gain.connect(destination);
+  }
+  reconcile(scene, at) {
+    if (scene.kind !== "playing") {
+      this.stop();
+      return;
+    }
+    const score = this.bank.scores.get(scene.score);
+    if (!score) throw new Error("Doom music score is unavailable.");
+    const position = musicPosition(scene, at) / 1e3;
+    const expected = this.context.currentTime - this.anchor;
+    if (this.generation !== scene.generation || this.score !== score || Math.abs(expected - position) > 0.25) {
+      this.stop();
+      this.score = score;
+      this.generation = scene.generation;
+      this.looping = scene.looping;
+      const duration = score.durationMs / 1e3;
+      const offset = scene.looping ? position % duration : Math.min(position, duration);
+      this.cycle = scene.looping ? Math.floor(position / duration) : 0;
+      this.anchor = this.context.currentTime - position;
+      this.state = new ScoreState();
+      this.index = 0;
+      while (this.index < score.events.length) {
+        const event = score.events[this.index];
+        if (!event || event.tick / 140 > offset) break;
+        this.state.apply(event);
+        this.index++;
+      }
+      for (const note of this.state.notes.values())
+        this.start(note, this.context.currentTime, true);
+      this.schedule();
+      this.timer = setInterval(() => {
+        try {
+          this.schedule();
+        } catch (error) {
+          this.failed(error);
+        }
+      }, 25);
+    }
+    this.gain.gain.setValueAtTime(scene.volume / 127, this.context.currentTime);
+  }
+  schedule() {
+    const score = this.score;
+    if (!score) return;
+    const horizon = this.context.currentTime + lookaheadSeconds;
+    const duration = score.durationMs / 1e3;
+    let budget = 1024;
+    while (budget-- > 0) {
+      const event = score.events[this.index];
+      if (!event) {
+        const boundary = this.anchor + (this.cycle + 1) * duration;
+        if (boundary > horizon) return;
+        for (const voice of this.held.values()) this.release(voice, boundary);
+        this.held.clear();
+        if (!this.looping) {
+          if (this.timer) clearInterval(this.timer);
+          this.timer = null;
+          return;
+        }
+        this.cycle++;
+        this.index = 0;
+        this.state = new ScoreState();
+        continue;
+      }
+      const when = this.anchor + this.cycle * duration + event.tick / 140;
+      if (when > horizon) return;
+      this.index++;
+      const change = this.state.apply(event);
+      switch (change.kind) {
+        case "start":
+          this.start(change.note, Math.max(this.context.currentTime, when));
+          break;
+        case "kill":
+        case "release":
+          for (const id of change.ids) {
+            const voice = this.held.get(id);
+            if (voice)
+              this.release(
+                voice,
+                Math.max(this.context.currentTime, when),
+                change.kind === "kill"
+              );
+          }
+          if (event.kind === "control" && event.control === 14)
+            this.parameters(event.channel, when);
+          break;
+        case "parameters":
+          this.parameters(
+            change.channel,
+            Math.max(this.context.currentTime, when)
+          );
+          break;
+        case "none":
+          break;
+        default: {
+          const unreachable = change;
+          void unreachable;
+        }
+      }
+    }
+    throw new Error("Doom music exceeded its scheduling budget.");
+  }
+  start(note, when, restored = false) {
+    const replaced = this.held.get(note.id);
+    if (replaced) this.release(replaced, when, true);
+    while (this.voices.size >= musicVoiceLimit) {
+      const victim = [...this.voices].find((voice2) => voice2.released) ?? this.voices.values().next().value;
+      if (!victim) break;
+      this.destroy(victim);
+    }
+    const instrument = this.bank.instruments[note.channel === 15 ? 128 + Math.max(0, Math.min(46, note.key - 35)) : note.program];
+    if (!instrument) throw new Error("Doom music instrument is unavailable.");
+    const key = (instrument.fixedKey ?? note.key) + instrument.transpose;
+    const frequency = Math.max(
+      20,
+      Math.min(12e3, 440 * 2 ** ((key - 69) / 12))
+    );
+    const context = this.context;
+    const carrier = context.createOscillator();
+    const modulator = context.createOscillator();
+    const depth = context.createGain();
+    const envelope = context.createGain();
+    const level = context.createGain();
+    const pan = context.createStereoPanner();
+    const voice = {
+      note,
+      carrier,
+      modulator,
+      depth,
+      envelope,
+      level,
+      pan,
+      instrument,
+      frequency,
+      carrierStarted: false,
+      modulatorStarted: false,
+      released: false
+    };
+    this.voices.add(voice);
+    this.held.set(note.id, voice);
+    carrier.type = instrument.waveform;
+    carrier.frequency.value = frequency;
+    modulator.frequency.value = frequency * instrument.multiplier;
+    modulator.connect(depth);
+    depth.connect(carrier.frequency);
+    carrier.connect(envelope);
+    envelope.connect(level);
+    level.connect(pan);
+    pan.connect(this.gain);
+    this.voiceParameters(voice, when);
+    const percussion = note.channel === 15;
+    envelope.gain.setValueAtTime(restored ? instrument.sustain : 0, when);
+    if (!restored) {
+      envelope.gain.linearRampToValueAtTime(1, when + instrument.attack);
+      envelope.gain.exponentialRampToValueAtTime(
+        Math.max(1e-3, percussion ? 1e-3 : instrument.sustain),
+        when + instrument.attack + (percussion ? 0.16 : 0.1)
+      );
+    }
+    carrier.onended = () => this.destroy(voice);
+    carrier.start(when);
+    voice.carrierStarted = true;
+    modulator.start(when);
+    voice.modulatorStarted = true;
+    if (percussion) this.release(voice, when + 0.22);
+  }
+  voiceParameters(voice, when) {
+    const channel = this.state.channels[voice.note.channel];
+    if (!channel) throw new Error("Doom music channel is unavailable.");
+    voice.level.gain.setValueAtTime(
+      0.12 * voice.note.velocity / 127 * channel.volume / 127 * channel.expression / 127 * (channel.soft ? 0.7 : 1),
+      when
+    );
+    voice.pan.pan.setValueAtTime((channel.pan - 64) / 64, when);
+    voice.carrier.detune.setValueAtTime(channel.bend * 100, when);
+    voice.modulator.detune.setValueAtTime(channel.bend * 100, when);
+    voice.depth.gain.setValueAtTime(
+      voice.frequency * voice.instrument.modulation * (0.15 + channel.modulation / 127 * 0.5),
+      when
+    );
+  }
+  parameters(channel, when) {
+    for (const voice of this.voices)
+      if (voice.note.channel === channel) this.voiceParameters(voice, when);
+  }
+  release(voice, when, immediate = false) {
+    if (voice.released && !immediate) return;
+    voice.released = true;
+    if (this.held.get(voice.note.id) === voice) this.held.delete(voice.note.id);
+    voice.envelope.gain.cancelAndHoldAtTime(when);
+    voice.envelope.gain.linearRampToValueAtTime(
+      0,
+      when + (immediate ? 5e-3 : voice.instrument.release)
+    );
+    voice.carrier.stop(
+      when + (immediate ? 6e-3 : voice.instrument.release + 0.01)
+    );
+    voice.modulator.stop(
+      when + (immediate ? 6e-3 : voice.instrument.release + 0.01)
+    );
+  }
+  destroy(voice) {
+    if (!this.voices.delete(voice)) return;
+    if (this.held.get(voice.note.id) === voice) this.held.delete(voice.note.id);
+    voice.carrier.onended = null;
+    if (voice.carrierStarted) voice.carrier.stop();
+    if (voice.modulatorStarted) voice.modulator.stop();
+    for (const node of [
+      voice.carrier,
+      voice.modulator,
+      voice.depth,
+      voice.envelope,
+      voice.level,
+      voice.pan
+    ])
+      node.disconnect();
+  }
+  stop() {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+    for (const voice of this.voices) this.destroy(voice);
+    this.held.clear();
+    this.score = null;
+    this.generation = null;
+  }
+  dispose() {
+    this.stop();
+    this.gain.disconnect();
+  }
+};
+
+// src/audio.ts
+function stereoWeights(volume, separation) {
+  return {
+    left: Math.min(255, Math.floor((254 - separation) * volume / 127)) / 255,
+    right: Math.min(255, Math.floor(separation * volume / 127)) / 255
+  };
+}
+var GameAudio = class {
+  output = { kind: "waiting" };
+  latest = null;
+  activity = "paused";
+  epoch = 0;
+  generation = 0;
+  muted = false;
+  volume = 0.7;
+  anchor = null;
+  bank;
+  changed;
+  constructor(bank, changed = () => {
+  }) {
+    this.bank = bank;
+    this.changed = changed;
+  }
+  get availability() {
+    const output = this.output;
+    if (output.kind === "open")
+      return { kind: this.muted || this.volume === 0 ? "muted" : "enabled" };
+    return output;
+  }
+  setActivity(activity2, epoch) {
+    if (this.activity === activity2 && this.epoch === epoch) return;
+    this.activity = activity2;
+    this.epoch = epoch;
+    this.generation++;
+    this.latest = null;
+    this.silence();
+    if (activity2 === "running" && this.output.kind === "open") this.activate();
+    else this.suspend();
+  }
+  activate() {
+    let output = this.output;
+    if (output.kind === "closed" || output.kind === "unavailable") return;
+    try {
+      if (output.kind === "waiting") {
+        if (!navigator.userActivation.isActive) return;
+        const context = new AudioContext({ latencyHint: "interactive" });
+        try {
+          const master = context.createGain();
+          master.gain.value = this.muted ? 0 : this.volume;
+          master.connect(context.destination);
+          const music = new MusicOutput(
+            context,
+            master,
+            this.bank,
+            (error) => this.fail(error)
+          );
+          output = {
+            kind: "open",
+            context,
+            master,
+            music,
+            effects: /* @__PURE__ */ new Map(),
+            samples: /* @__PURE__ */ new Map()
+          };
+        } catch (error) {
+          void context.close().catch(() => {
+          });
+          throw error;
+        }
+        this.output = output;
+        const owned = output;
+        context.onstatechange = () => {
+          if (this.output === owned && context.state === "closed")
+            this.fail(new Error("The Doom audio context closed unexpectedly."));
+        };
+        this.changed(this.availability);
+      }
+      if (this.activity !== "running" || this.muted || this.volume === 0) {
+        this.suspend();
+        return;
+      }
+      const current = output;
+      const generation = this.generation;
+      void current.context.resume().then(
+        () => {
+          if (this.output !== current) {
+            void current.context.close().catch(() => {
+            });
+            return;
+          }
+          if (generation !== this.generation) {
+            if (this.activity !== "running" || this.muted || this.volume === 0)
+              this.suspend();
+            return;
+          }
+          if (this.latest) {
+            try {
+              this.render(this.latest);
+            } catch (error) {
+              this.fail(error);
+            }
+          }
+        },
+        (error) => {
+          if (this.output === current && generation === this.generation)
+            this.fail(error);
+        }
+      );
+    } catch (error) {
+      this.fail(error);
+    }
+  }
+  setPreference(muted, volume) {
+    if (!Number.isFinite(volume) || volume < 0 || volume > 1)
+      throw new Error("Invalid Doom audio volume.");
+    const silenced = muted || volume === 0;
+    const wasSilenced = this.muted || this.volume === 0;
+    this.muted = muted;
+    this.volume = volume;
+    if (this.output.kind === "open")
+      this.output.master.gain.setValueAtTime(
+        silenced ? 0 : volume,
+        this.output.context.currentTime
+      );
+    if (silenced !== wasSilenced) {
+      this.generation++;
+      this.silence();
+      if (silenced) this.suspend();
+      else this.activate();
+    }
+    this.changed(this.availability);
+  }
+  apply(scene) {
+    if (this.activity !== "running" || scene.epoch !== this.epoch || this.output.kind === "closed" || this.output.kind === "unavailable")
+      return;
+    if (this.latest && (scene.revision < this.latest.revision || scene.at < this.latest.at))
+      return;
+    this.latest = scene;
+    if (this.output.kind === "open" && this.output.context.state === "running" && !this.muted && this.volume > 0) {
+      try {
+        this.render(scene);
+      } catch (error) {
+        this.fail(error);
+      }
+    }
+  }
+  render(scene) {
+    const output = this.output;
+    if (output.kind !== "open" || this.activity !== "running" || scene.epoch !== this.epoch || this.muted || this.volume === 0)
+      return;
+    const now = output.context.currentTime;
+    const predicted = this.anchor ? this.anchor.game + (now - this.anchor.audio) * 1e3 : scene.at;
+    if (!this.anchor || Math.abs(predicted - scene.at) > 250)
+      this.anchor = { game: scene.at, audio: now };
+    const at = Math.max(
+      scene.at,
+      this.anchor.game + (now - this.anchor.audio) * 1e3
+    );
+    for (const [channel, effect] of output.effects) {
+      const voice = scene.voices[channel];
+      if (!voice || voice.generation !== effect.generation || voice.endsAt <= at)
+        this.stopEffect(output, channel, effect);
+    }
+    for (const voice of scene.voices) {
+      if (!voice || voice.endsAt <= at) continue;
+      let effect = output.effects.get(voice.channel);
+      if (!effect) {
+        const data = this.bank.samples.get(voice.sample);
+        if (!data) throw new Error("Doom sound sample is unavailable.");
+        let buffer = output.samples.get(voice.sample);
+        if (!buffer) {
+          buffer = output.context.createBuffer(1, data.bytes.length, data.rate);
+          const pcm = buffer.getChannelData(0);
+          const bytes = new DataView(
+            data.bytes.buffer,
+            data.bytes.byteOffset,
+            data.bytes.byteLength
+          );
+          for (let index = 0; index < data.bytes.length; index++)
+            pcm[index] = (bytes.getUint8(index) - 128) / 128;
+          output.samples.set(voice.sample, buffer);
+        }
+        const source = output.context.createBufferSource();
+        source.buffer = buffer;
+        const left = output.context.createGain();
+        const right = output.context.createGain();
+        const merger = output.context.createChannelMerger(2);
+        source.connect(left);
+        source.connect(right);
+        left.connect(merger, 0, 0);
+        right.connect(merger, 0, 1);
+        merger.connect(output.master);
+        effect = {
+          generation: voice.generation,
+          started: false,
+          source,
+          left,
+          right,
+          merger
+        };
+        output.effects.set(voice.channel, effect);
+        this.parameters(effect, voice, now);
+        const started = effect;
+        source.onended = () => {
+          if (output.effects.get(voice.channel) === started)
+            this.stopEffect(output, voice.channel, started);
+        };
+        source.start(now, Math.max(0, at - voice.startedAt) / 1e3);
+        effect.started = true;
+      } else this.parameters(effect, voice, now);
+    }
+    output.music.reconcile(scene.music, at);
+  }
+  parameters(effect, voice, at) {
+    const weights = stereoWeights(voice.volume, voice.separation);
+    effect.left.gain.setValueAtTime(weights.left, at);
+    effect.right.gain.setValueAtTime(weights.right, at);
+  }
+  stopEffect(output, channel, effect) {
+    if (output.effects.get(channel) === effect) output.effects.delete(channel);
+    effect.source.onended = null;
+    if (effect.started) effect.source.stop();
+    effect.source.disconnect();
+    effect.left.disconnect();
+    effect.right.disconnect();
+    effect.merger.disconnect();
+  }
+  silence() {
+    this.anchor = null;
+    const output = this.output;
+    if (output.kind !== "open") return;
+    output.music.stop();
+    for (const [channel, effect] of output.effects)
+      this.stopEffect(output, channel, effect);
+  }
+  suspend() {
+    const output = this.output;
+    if (output.kind !== "open" || output.context.state === "closed") return;
+    const generation = this.generation;
+    void output.context.suspend().catch((error) => {
+      if (this.output === output && generation === this.generation)
+        this.fail(error);
+    });
+  }
+  fail(error) {
+    if (this.output.kind === "closed" || this.output.kind === "unavailable")
+      return;
+    const message = error instanceof Error ? error.message.slice(0, 200) : "Hibi could not play Doom sound.";
+    this.closeOutput();
+    this.output = { kind: "unavailable", message };
+    this.changed(this.availability);
+  }
+  closeOutput() {
+    this.generation++;
+    this.latest = null;
+    this.silence();
+    const output = this.output;
+    if (output.kind === "open") {
+      output.context.onstatechange = null;
+      output.music.dispose();
+      output.master.disconnect();
+      output.samples.clear();
+      void output.context.close().catch(() => {
+      });
+    }
+  }
+  dispose() {
+    if (this.output.kind === "closed") return;
+    this.closeOutput();
+    this.output = { kind: "closed" };
+  }
+};
+
+// src/audio-bank.ts
+function parsePcm(bytes, name = "sound") {
+  const data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (bytes.length < 8 || data.getUint16(0, true) !== 3)
+    throw new Error("Invalid Doom PCM header.");
+  const rate = data.getUint16(2, true);
+  const length = data.getUint32(4, true);
+  if (rate !== 11025 && rate !== 22050 || length <= 48 || length > bytes.length - 8)
+    throw new Error("Invalid Doom PCM extent or rate.");
+  const samples = bytes.slice(24, 8 + length - 16);
+  return {
+    name,
+    rate,
+    bytes: samples,
+    durationMs: samples.length * 1e3 / rate
+  };
+}
+function parseMus(bytes, name = "music") {
+  const data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (bytes.length < 16 || data.getUint32(0, true) !== 441668941)
+    throw new Error("Invalid Doom MUS header.");
+  const length = data.getUint16(4, true);
+  const start = data.getUint16(6, true);
+  const channels = data.getUint16(8, true);
+  const instruments = data.getUint16(12, true);
+  if (bytes.length > 65536 || channels > 15 || instruments > 256 || start < 16 + instruments * 2 || length === 0 || start > bytes.length - length)
+    throw new Error("Invalid Doom MUS extent.");
+  let position = start;
+  let tick = 0;
+  const end = start + length;
+  const velocities = new Uint8Array(16).fill(127);
+  const events = [];
+  const read = () => {
+    if (position >= end) throw new Error("Truncated Doom MUS event.");
+    return data.getUint8(position++);
+  };
+  while (position < end) {
+    if (events.length >= 32768)
+      throw new Error("Doom MUS exceeds its event limit.");
+    const descriptor = read();
+    const channel = descriptor & 15;
+    const kind = descriptor >> 4 & 7;
+    switch (kind) {
+      case 0:
+        events.push({ kind: "off", tick, channel, key: read() & 127 });
+        break;
+      case 1: {
+        const key = read();
+        if (key & 128) velocities[channel] = read() & 127;
+        events.push({
+          kind: "on",
+          tick,
+          channel,
+          key: key & 127,
+          velocity: velocities.at(channel) ?? 127
+        });
+        break;
+      }
+      case 2:
+        events.push({ kind: "pitch", tick, channel, bend: (read() - 128) / 64 });
+        break;
+      case 3: {
+        const control = read();
+        if (control < 10 || control > 14)
+          throw new Error("Invalid Doom MUS system event.");
+        events.push({ kind: "control", tick, channel, control, value: 0 });
+        break;
+      }
+      case 4: {
+        const control = read();
+        const value = Math.min(127, read());
+        if (control > 9) throw new Error("Invalid Doom MUS controller.");
+        events.push({ kind: "control", tick, channel, control, value });
+        break;
+      }
+      case 6:
+        if (tick <= 0) throw new Error("Doom MUS has no positive duration.");
+        return {
+          name,
+          bytes: bytes.slice(),
+          events,
+          durationTicks: tick,
+          durationMs: tick * 1e3 / 140
+        };
+      default:
+        throw new Error("Unknown Doom MUS event.");
+    }
+    if (descriptor & 128) {
+      let delay = 0;
+      for (let count = 0; ; count++) {
+        if (count >= 4) throw new Error("Doom MUS delay exceeds its limit.");
+        const byte = read();
+        delay = delay * 128 + (byte & 127);
+        if (!(byte & 128)) break;
+      }
+      tick += delay;
+      if (tick > 140 * 60 * 10)
+        throw new Error("Doom MUS exceeds its duration limit.");
+    }
+  }
+  throw new Error("Doom MUS has no score-end event.");
+}
+function parseInstruments(bytes) {
+  if (bytes.length !== 11908 || new TextDecoder().decode(bytes.subarray(0, 8)) !== "#OPL_II#")
+    throw new Error("Invalid Doom GENMIDI bank.");
+  const data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const waveforms = [
+    "sine",
+    "triangle",
+    "sawtooth",
+    "square"
+  ];
+  return Array.from({ length: 175 }, (_, index) => {
+    const at = 8 + index * 36;
+    const modulator = at + 4;
+    const carrier = at + 11;
+    const attack = data.getUint8(carrier + 1) >> 4;
+    const envelope = data.getUint8(carrier + 2);
+    const multiplier = data.getUint8(modulator) & 15;
+    return {
+      fixedKey: data.getUint16(at, true) & 1 ? data.getUint8(at + 3) & 127 : null,
+      transpose: data.getInt16(at + 18, true),
+      waveform: waveforms[data.getUint8(carrier + 3) & 3] ?? "sine",
+      modulation: (63 - (data.getUint8(modulator + 5) & 63)) / 63,
+      multiplier: multiplier === 0 ? 0.5 : Math.min(8, multiplier),
+      attack: 3e-3 + (15 - attack) * 3e-3,
+      sustain: Math.max(0.06, 1 - (envelope >> 4) / 15),
+      release: 0.04 + (15 - (envelope & 15)) * 8e-3
+    };
+  });
+}
+function parseAudioBank(iwad) {
+  const data = new DataView(iwad.buffer, iwad.byteOffset, iwad.byteLength);
+  if (iwad.length < 12 || data.getUint32(0, true) !== 1145132873)
+    throw new Error("Invalid Doom audio IWAD.");
+  const count = data.getUint32(4, true);
+  const directory = data.getUint32(8, true);
+  if (count > 4096 || directory > iwad.length - count * 16)
+    throw new Error("Invalid Doom audio lump directory.");
+  const samples = /* @__PURE__ */ new Map();
+  const scores = /* @__PURE__ */ new Map();
+  let instruments = null;
+  const text = new TextDecoder("ascii", { fatal: true });
+  for (let lump = 0; lump < count; lump++) {
+    const at = directory + lump * 16;
+    const offset = data.getUint32(at, true);
+    const length = data.getUint32(at + 4, true);
+    if (offset > iwad.length - length)
+      throw new Error("Doom audio lump is outside its IWAD.");
+    const name = text.decode(iwad.subarray(at + 8, at + 16)).replace(/\0.*$/, "").toUpperCase();
+    const bytes = iwad.subarray(offset, offset + length);
+    if (name.startsWith("DS")) samples.set(lump, parsePcm(bytes, name));
+    else if (name.startsWith("D_")) scores.set(lump, parseMus(bytes, name));
+    else if (name === "GENMIDI") instruments = parseInstruments(bytes);
+  }
+  if (samples.size !== 55 || scores.size !== 13 || !instruments)
+    throw new Error("Doom audio bank is incomplete.");
+  return { samples, scores, instruments };
+}
 
 // engine/pins.json
 var pins_default = {
   schema: 1,
   engine: {
-    bytes: 456566,
-    sha256: "9f49010fb7ea8111346f315a6261806268f4fc70dd9b3d951b9a8eca3f3fbf82",
+    bytes: 456114,
+    sha256: "33aa16f84b0166fcc1ff150ee90f12e89593cacbd005fd3b7f35c88eecb01416",
     revision: "e257a09527062bfb986b6e5e0780839b6cbd5b71",
     license: "GPL-3.0-only",
     sourceLicense: "GPL-2.0-or-later AND GPL-3.0-or-later AND GPL-3.0-only"
@@ -32,11 +906,32 @@ var pins_default = {
   compilerRtRevision: "87f0227cb60147a26a1eeb4fb06e3b505e9c7261"
 };
 
+// package.json
+var package_default = {
+  name: "hibi-doom",
+  version: "0.4.0",
+  private: true,
+  type: "module",
+  license: "GPL-3.0-only",
+  engines: {
+    node: ">=24.0.0"
+  },
+  scripts: {
+    check: "node scripts/check.mjs",
+    build: "node scripts/build.mjs",
+    "build:check": "node scripts/build.mjs --check",
+    typecheck: "node scripts/typecheck.mjs",
+    test: "node --test --test-concurrency=1 tests/model.test.mjs tests/input.test.mjs tests/audio.test.mjs tests/audio-owner.test.mjs tests/audio-worker.test.mjs tests/video.test.mjs tests/mouse-runtime.test.mjs tests/install.test.mjs tests/bundle.test.mjs tests/iwad.test.mjs tests/bundled-runtime.test.mjs",
+    "test:hibi": "node --test tests/hibi.integration.test.mjs"
+  }
+};
+
 // src/bundle.ts
+var sourceExportName = `hibi-doom-${package_default.version}-source.tar.gz`;
 var maxChunk = 3 * 1024 * 1024;
 var maxArtifact = 16 * 1024 * 1024;
 var hashPattern = /^[0-9a-f]{64}$/;
-function record(value, fields2) {
+function record2(value, fields2) {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new Error("Invalid Doom bundle metadata.");
   const object2 = value;
@@ -56,12 +951,12 @@ function hash(value) {
 }
 function artifact(input, role) {
   const extra = role === "engine" ? ["abi"] : ["archive", "exportName"];
-  const value = record(input, ["bytes", "sha256", "chunks", ...extra]);
+  const value = record2(input, ["bytes", "sha256", "chunks", ...extra]);
   const bytes = size(value.bytes, maxArtifact);
   if (!Array.isArray(value.chunks) || value.chunks.length === 0 || value.chunks.length > 6)
     throw new Error("Invalid Doom bundle chunks.");
   const chunks = value.chunks.map((input2, index) => {
-    const chunk = record(input2, ["path", "jsonBytes", "decodedBytes", "sha256"]);
+    const chunk = record2(input2, ["path", "jsonBytes", "decodedBytes", "sha256"]);
     const decodedBytes = size(chunk.decodedBytes, maxChunk);
     const jsonBytes = size(chunk.jsonBytes, 5 * 1024 * 1024);
     if (chunk.path !== `assets/${role}/${String(index).padStart(3, "0")}.json` || jsonBytes !== 4 * Math.ceil(decodedBytes / 3) + 13)
@@ -83,19 +978,19 @@ function artifact(input, role) {
   };
 }
 function parseBundle(input) {
-  const value = record(input, ["schema", "engine", "iwad", "source", "notices"]);
+  const value = record2(input, ["schema", "engine", "iwad", "source", "notices"]);
   const engine = artifact(value.engine, "engine");
-  const iwad = record(value.iwad, [
+  const iwad = record2(value.iwad, [
     "bytes",
     "sha256",
     "edition",
     "license",
     "feed"
   ]);
-  const feed = record(iwad.feed, ["url", "bytes", "sha256"]);
+  const feed = record2(iwad.feed, ["url", "bytes", "sha256"]);
   const source = artifact(value.source, "source");
-  const notices = record(value.notices, ["path", "bytes", "sha256"]);
-  if (value.schema !== 2 || engine.value.abi !== "doomgeneric-wasi-v1" || engine.bytes > 1024 * 1024 || iwad.edition !== pins_default.iwad.edition || iwad.bytes !== pins_default.iwad.bytes || iwad.sha256 !== pins_default.iwad.sha256 || iwad.license !== pins_default.iwad.license || feed.url !== pins_default.iwad.feed.url || feed.bytes !== pins_default.iwad.feed.bytes || feed.sha256 !== pins_default.iwad.feed.sha256 || source.value.archive !== "tar.gz" || source.value.exportName !== "hibi-doom-0.3.0-source.tar.gz" || notices.path !== "LICENSES.md")
+  const notices = record2(value.notices, ["path", "bytes", "sha256"]);
+  if (value.schema !== 2 || engine.value.abi !== "doomgeneric-wasi-v2" || engine.bytes > 1024 * 1024 || iwad.edition !== pins_default.iwad.edition || iwad.bytes !== pins_default.iwad.bytes || iwad.sha256 !== pins_default.iwad.sha256 || iwad.license !== pins_default.iwad.license || feed.url !== pins_default.iwad.feed.url || feed.bytes !== pins_default.iwad.feed.bytes || feed.sha256 !== pins_default.iwad.feed.sha256 || source.value.archive !== "tar.gz" || source.value.exportName !== sourceExportName || notices.path !== "LICENSES.md")
     throw new Error("Unsupported Doom bundle.");
   const common = ({ bytes, sha256: sha2562, chunks }) => ({
     bytes,
@@ -104,7 +999,7 @@ function parseBundle(input) {
   });
   return Object.freeze({
     schema: 2,
-    engine: Object.freeze({ ...common(engine), abi: "doomgeneric-wasi-v1" }),
+    engine: Object.freeze({ ...common(engine), abi: "doomgeneric-wasi-v2" }),
     iwad: Object.freeze({
       ...pins_default.iwad,
       feed: Object.freeze({ ...pins_default.iwad.feed })
@@ -112,7 +1007,7 @@ function parseBundle(input) {
     source: Object.freeze({
       ...common(source),
       archive: "tar.gz",
-      exportName: "hibi-doom-0.3.0-source.tar.gz"
+      exportName: sourceExportName
     }),
     notices: Object.freeze({
       path: "LICENSES.md",
@@ -186,7 +1081,7 @@ async function loadArtifact(artifact2, base, signal, fetchFile = fetch) {
       signal,
       fetchFile
     );
-    const value = record(
+    const value = record2(
       JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(raw)),
       ["base64"]
     );
@@ -218,9 +1113,9 @@ var keys = {
   ArrowUp: "forward",
   KeyS: "backward",
   ArrowDown: "backward",
-  KeyA: "turnLeft",
+  KeyA: "strafeLeft",
   ArrowLeft: "turnLeft",
-  KeyD: "turnRight",
+  KeyD: "strafeRight",
   ArrowRight: "turnRight",
   Comma: "strafeLeft",
   Period: "strafeRight",
@@ -233,31 +1128,94 @@ var keys = {
   Tab: "map"
 };
 var GameInput = class {
-  codes = /* @__PURE__ */ new Set();
-  taps = /* @__PURE__ */ new Set();
+  sources = /* @__PURE__ */ new Map();
+  taps = /* @__PURE__ */ new Map();
+  origin = null;
+  fraction = 0;
+  turn = 0;
   epoch = 0;
   press(code, repeat) {
     const action = keys[code];
-    if (!action || repeat || this.codes.has(code)) return;
-    const alreadyHeld = [...this.codes].some((key) => keys[key] === action);
-    this.codes.add(code);
-    if (!alreadyHeld) this.taps.add(action);
+    if (action) this.pressSource(`key:${code}`, action, repeat);
   }
   release(code) {
-    return this.codes.delete(code);
+    return this.sources.delete(`key:${code}`);
+  }
+  pressSource(source, action, repeat = false) {
+    if (repeat || this.sources.has(source)) return;
+    const alreadyHeld = [...this.sources.values()].includes(action);
+    this.sources.set(source, action);
+    if (!alreadyHeld) this.taps.set(source, action);
+  }
+  pointerPress(button) {
+    const action = button === 0 ? "fire" : button === 2 ? "use" : null;
+    if (!action) return false;
+    this.pressSource(`pointer:${button}`, action);
+    return true;
+  }
+  pointerRelease(button) {
+    return this.sources.delete(`pointer:${button}`);
+  }
+  pointerButtons(buttons) {
+    for (const [button, mask] of [
+      [0, 1],
+      [2, 2]
+    ]) {
+      if (buttons & mask) this.pointerPress(button);
+      else this.pointerRelease(button);
+    }
+  }
+  get pointerHeld() {
+    return [...this.sources.keys()].some(
+      (source) => source.startsWith("pointer:")
+    );
+  }
+  point(pointer, x, canvasWidth) {
+    if (!Number.isFinite(x) || !Number.isFinite(canvasWidth) || canvasWidth <= 0) {
+      this.resetOrigin();
+      return;
+    }
+    const previous = this.origin;
+    this.origin = { pointer, x };
+    if (!previous || previous.pointer !== pointer) return;
+    const delta = (x - previous.x) * 640 / canvasWidth * 8;
+    const scaled = Math.max(-2048, Math.min(2048, delta)) + this.fraction;
+    const whole = Math.trunc(scaled);
+    this.fraction = scaled - whole;
+    this.turn = Math.max(-2048, Math.min(2048, this.turn + whole));
+  }
+  resetOrigin() {
+    this.origin = null;
+    this.fraction = 0;
+  }
+  clearPointer() {
+    for (const source of /* @__PURE__ */ new Set([
+      ...this.sources.keys(),
+      ...this.taps.keys()
+    ])) {
+      if (source.startsWith("pointer:")) {
+        this.sources.delete(source);
+        this.taps.delete(source);
+      }
+    }
+    this.resetOrigin();
+    this.turn = 0;
+    this.epoch++;
   }
   clear() {
-    this.codes.clear();
+    this.sources.clear();
     this.taps.clear();
+    this.resetOrigin();
+    this.turn = 0;
     this.epoch++;
   }
   take() {
-    const held = [...new Set([...this.codes].map((code) => keys[code]))].filter(
-      (action) => action !== void 0
-    );
-    const taps = [...this.taps];
+    const held = [...new Set(this.sources.values())];
+    const taps = [...new Set(this.taps.values())];
+    const turn = this.turn;
     this.taps.clear();
-    return { held, taps };
+    this.turn = 0;
+    return { held, taps, turn };
   }
 };
 
@@ -306,7 +1264,7 @@ var partCount = 9;
 var hashPattern2 = /^[0-9a-f]{64}$/;
 var manifestUrl = new URL(pins_default.iwad.feed.url);
 var baseUrl = new URL(".", manifestUrl);
-function record2(value, fields2) {
+function record3(value, fields2) {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new Error("Invalid Doom shareware feed.");
   const object2 = value;
@@ -315,7 +1273,7 @@ function record2(value, fields2) {
   return object2;
 }
 function parseIwadManifest(input) {
-  const value = record2(input, [
+  const value = record3(input, [
     "schema",
     "edition",
     "bytes",
@@ -329,7 +1287,7 @@ function parseIwadManifest(input) {
     throw new Error("Unsupported Doom shareware feed.");
   return Object.freeze(
     value.parts.map((input2, index) => {
-      const part = record2(input2, ["path", "bytes", "sha256"]);
+      const part = record3(input2, ["path", "bytes", "sha256"]);
       const expectedBytes = Math.min(
         partBytes,
         pins_default.iwad.bytes - index * partBytes
@@ -408,7 +1366,7 @@ async function downloadIwad({
   });
   for (const part of parts) {
     const raw = await text(part.path, 4 * Math.ceil(part.bytes / 3) + 14);
-    const value = record2(JSON.parse(raw), ["base64"]);
+    const value = record3(JSON.parse(raw), ["base64"]);
     const bytes = decodeBase64(value.base64, part.bytes);
     if (await sha256(bytes) !== part.sha256)
       throw new Error("Doom shareware part digest does not match.");
@@ -477,7 +1435,7 @@ var IwadCache = class {
     }
     if (snapshot?.status === "ready" && snapshot.value !== null) {
       try {
-        const cache = record2(snapshot.value, [
+        const cache = record3(snapshot.value, [
           "schema",
           "bytes",
           "sha256",
@@ -563,17 +1521,30 @@ function parseFrameUpdate(input) {
   const value = object(input);
   const sequence = integer(value.sequence);
   const elapsedMs = integer(value.elapsedMs);
+  const gameTics = integer(value.gameTics);
+  const audio = parseAudioScene(value.audio);
   if (value.kind === "unchanged" || value.kind === "paused") {
-    fields(value, ["kind", "sequence", "elapsedMs"]);
-    return { kind: value.kind, sequence, elapsedMs };
+    fields(value, ["kind", "sequence", "elapsedMs", "gameTics", "audio"]);
+    return { kind: value.kind, sequence, elapsedMs, gameTics, audio };
   }
-  fields(value, ["kind", "sequence", "elapsedMs", "width", "height", "pixels"]);
+  fields(value, [
+    "kind",
+    "sequence",
+    "elapsedMs",
+    "gameTics",
+    "audio",
+    "width",
+    "height",
+    "pixels"
+  ]);
   if (value.kind !== "frame" || value.width !== width || value.height !== height || !(value.pixels instanceof Uint8Array) || value.pixels.byteLength !== frameBytes)
     throw new Error("Invalid Doom RGBA frame.");
   return {
     kind: "frame",
     sequence,
     elapsedMs,
+    gameTics,
+    audio,
     width,
     height,
     pixels: value.pixels
@@ -589,8 +1560,13 @@ function parseWorkerReply(input) {
         throw new Error("Invalid Doom worker readiness.");
       return { id, kind: "ready", engine: "doom" };
     case "activity":
-      fields(value, ["id", "kind", "activity"]);
-      return { id, kind: "activity", activity: activity(value.activity) };
+      fields(value, ["id", "kind", "activity", "epoch"]);
+      return {
+        id,
+        kind: "activity",
+        activity: activity(value.activity),
+        epoch: integer(value.epoch)
+      };
     case "update":
       fields(value, ["id", "kind", "update"]);
       return { id, kind: "update", update: parseFrameUpdate(value.update) };
@@ -603,6 +1579,13 @@ function parseWorkerReply(input) {
       throw new Error("Invalid Doom worker reply.");
   }
 }
+function parseAudioNotice(input) {
+  if (!input || typeof input !== "object" || !("kind" in input) || input.kind !== "audio")
+    return null;
+  const value = object(input);
+  fields(value, ["kind", "audio"]);
+  return { kind: "audio", audio: parseAudioScene(value.audio) };
+}
 
 // src/session.ts
 var GameSession = class {
@@ -611,9 +1594,11 @@ var GameSession = class {
   pending = /* @__PURE__ */ new Map();
   failure = null;
   timeoutMs;
-  constructor(worker, timeoutMs = 15e3) {
+  events;
+  constructor(worker, timeoutMs = 15e3, events = {}) {
     this.worker = worker;
     this.timeoutMs = timeoutMs;
+    this.events = events;
     worker.addEventListener("message", this.receive);
     worker.addEventListener("error", this.workerError);
     worker.addEventListener("messageerror", this.workerError);
@@ -636,7 +1621,13 @@ var GameSession = class {
           new Error("Doom stopped responding. Close and reopen the game.")
         );
       }, this.timeoutMs);
-      this.pending.set(id, { kind: input.kind, resolve, reject, timer });
+      this.pending.set(id, {
+        kind: input.kind,
+        notifications: 0,
+        resolve,
+        reject,
+        timer
+      });
       try {
         worker.postMessage({ id, ...input }, transfer);
       } catch (error) {
@@ -660,6 +1651,7 @@ var GameSession = class {
       entry.reject(error);
     }
     this.pending.clear();
+    this.events.disposed?.(error);
   }
   workerError = () => {
     this.dispose(
@@ -668,6 +1660,18 @@ var GameSession = class {
   };
   receive = (event) => {
     try {
+      const notice = parseAudioNotice(event.data);
+      if (notice) {
+        const operation = this.pending.values().next().value;
+        if (!operation)
+          throw new Error(
+            "Doom returned audio without an outstanding operation."
+          );
+        if (++operation.notifications > audioNotificationBudget)
+          throw new Error("Doom exceeded its sound notification budget.");
+        this.events.audio?.(notice.audio);
+        return;
+      }
       const reply = parseWorkerReply(event.data);
       const entry = this.pending.get(reply.id);
       if (!entry) throw new Error("Doom returned an unexpected request ID.");
@@ -734,7 +1738,7 @@ var SourceExport = class {
       if (this.disposed) return;
       this.set({ kind: "choosing" });
       const selected = await this.io.selectExport({
-        suggestedName: "hibi-doom-0.3.0-source.tar.gz",
+        suggestedName: this.source.exportName,
         extension: "gz"
       });
       if (selected.ok && selected.value) handle = selected.value.handle;
@@ -769,7 +1773,7 @@ var SourceExport = class {
 };
 
 // src/style.css
-var style_default = ".hibi-doom {\n  height: 100%;\n  min-height: 0;\n  display: flex;\n  flex-direction: column;\n  color: var(--ink);\n  background: var(--background);\n}\n.hibi-doom-controls {\n  padding: 8px 12px;\n  flex: 0 0 auto;\n}\n.hibi-doom-legal {\n  flex: 0 0 auto;\n  padding: 4px 12px;\n  font-size: var(--text-sm);\n  color: var(--muted);\n}\n.hibi-doom-legal span {\n  flex: 1;\n}\n.hibi-doom-cache-warning {\n  margin: 0;\n  padding: 4px 12px;\n  font-size: var(--text-sm);\n}\n.hibi-doom-controls span {\n  flex: 1;\n  font-size: var(--text-sm);\n  color: var(--muted);\n}\n.hibi-doom-screen {\n  flex: 1;\n  min-height: 0;\n  position: relative;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  overflow: hidden;\n  background: #000;\n}\n.hibi-doom-screen canvas {\n  display: block;\n  width: 100%;\n  height: 100%;\n  object-fit: contain;\n  image-rendering: pixelated;\n}\n.hibi-doom-screen canvas:focus-visible {\n  outline: 2px solid var(--accent);\n  outline-offset: -2px;\n}\n.hibi-doom-message {\n  position: absolute;\n  inset: 0;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 12px;\n  padding: 24px;\n  background: var(--background);\n  color: var(--ink);\n  text-align: center;\n}\n.hibi-doom-message p {\n  max-width: 48rem;\n}\n.hibi-doom-paused {\n  position: absolute;\n  bottom: 16px;\n  padding: 8px 12px;\n  background: var(--surface);\n  color: var(--ink);\n  border-radius: var(--radius-control);\n  pointer-events: none;\n}\n.hibi-doom-licenses {\n  height: 100%;\n  overflow: auto;\n  padding: 16px;\n  color: var(--ink);\n}\n.hibi-doom-notices {\n  white-space: pre-wrap;\n  overflow-wrap: anywhere;\n  font-family: var(--font-mono);\n  font-size: var(--text-sm);\n}\n";
+var style_default = ".hibi-doom {\n  height: 100%;\n  min-height: 0;\n  display: flex;\n  flex-direction: column;\n  color: var(--ink);\n  background: var(--background);\n}\n.hibi-doom-controls {\n  padding: 8px 12px;\n  flex: 0 0 auto;\n  flex-wrap: wrap;\n}\n.hibi-doom-volume {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  font-size: var(--text-sm);\n}\n.hibi-doom-volume input {\n  width: 80px;\n}\n.hibi-doom-audio-status {\n  margin: 0;\n  padding: 4px 12px;\n  font-size: var(--text-sm);\n  color: var(--muted);\n}\n.hibi-doom-legal {\n  flex: 0 0 auto;\n  padding: 4px 12px;\n  font-size: var(--text-sm);\n  color: var(--muted);\n}\n.hibi-doom-legal span {\n  flex: 1;\n}\n.hibi-doom-cache-warning {\n  margin: 0;\n  padding: 4px 12px;\n  font-size: var(--text-sm);\n}\n.hibi-doom-controls span {\n  flex: 1;\n  font-size: var(--text-sm);\n  color: var(--muted);\n}\n.hibi-doom-screen {\n  flex: 1;\n  min-height: 0;\n  position: relative;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  overflow: hidden;\n  background: #000;\n}\n.hibi-doom-screen canvas {\n  display: block;\n  width: 100%;\n  height: 100%;\n  object-fit: contain;\n  image-rendering: pixelated;\n}\n.hibi-doom-screen canvas:focus-visible {\n  outline: 2px solid var(--accent);\n  outline-offset: -2px;\n}\n.hibi-doom-message {\n  position: absolute;\n  inset: 0;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 12px;\n  padding: 24px;\n  background: var(--background);\n  color: var(--ink);\n  text-align: center;\n}\n.hibi-doom-message p {\n  max-width: 48rem;\n}\n.hibi-doom-paused {\n  position: absolute;\n  bottom: 16px;\n  padding: 8px 12px;\n  background: var(--surface);\n  color: var(--ink);\n  border-radius: var(--radius-control);\n  pointer-events: none;\n}\n.hibi-doom-licenses {\n  height: 100%;\n  overflow: auto;\n  padding: 16px;\n  color: var(--ink);\n}\n.hibi-doom-notices {\n  white-space: pre-wrap;\n  overflow-wrap: anywhere;\n  font-family: var(--font-mono);\n  font-size: var(--text-sm);\n}\n";
 
 // src/index.tsx
 var disposed = (owner) => owner.state.kind === "disposed";
@@ -790,6 +1794,8 @@ var create = (sdk) => {
   }) {
     const canvas = useRef(null);
     const input = useRef(new GameInput());
+    const capture = useRef(null);
+    const audio = useRef(null);
     const lifetime = useRef(null);
     const wake = useRef(() => {
     });
@@ -799,6 +1805,11 @@ var create = (sdk) => {
       progress: { kind: "checking" }
     });
     const [paused, setPaused] = useState(false);
+    const [availability, setAvailability] = useState({
+      kind: "waiting"
+    });
+    const [muted, setMuted] = useState(false);
+    const [volume, setVolume] = useState(0.7);
     const [canvasFocused, setCanvasFocused] = useState(false);
     const [focused, setFocused] = useState(document.hasFocus());
     const [documentVisible, setDocumentVisible] = useState(
@@ -807,9 +1818,19 @@ var create = (sdk) => {
     const desired = display.kind === "ready" && visible && focused && documentVisible && canvasFocused && !paused ? "running" : "paused";
     const activity2 = useRef(desired);
     activity2.current = desired;
+    function releaseCapture() {
+      const pointer = capture.current;
+      capture.current = null;
+      const element = canvas.current;
+      if (pointer !== null && element?.hasPointerCapture(pointer))
+        element.releasePointerCapture(pointer);
+      input.current.resetOrigin();
+    }
     function releaseInput() {
+      releaseCapture();
       input.current.clear();
       activity2.current = "paused";
+      audio.current?.setActivity("paused", input.current.epoch);
       wake.current();
     }
     useEffect(() => {
@@ -818,7 +1839,8 @@ var create = (sdk) => {
           kind: "loading",
           abort: new AbortController(),
           progress: { kind: "checking" }
-        }
+        },
+        audio: null
       };
       lifetime.current = owner;
       setDisplay(owner.state);
@@ -834,11 +1856,14 @@ var create = (sdk) => {
       };
       const dispose = () => {
         if (disposed(owner)) return;
-        releaseInput();
-        if (owner.state.kind === "loading") owner.state.abort.abort();
-        if (owner.state.kind === "starting" || owner.state.kind === "ready")
-          owner.state.session.dispose();
+        const previous = owner.state;
         owner.state = { kind: "disposed" };
+        releaseInput();
+        if (previous.kind === "loading") previous.abort.abort();
+        if (previous.kind === "starting" || previous.kind === "ready")
+          previous.session.dispose();
+        owner.audio?.dispose();
+        if (audio.current === owner.audio) audio.current = null;
         window.removeEventListener("blur", blur);
         window.removeEventListener("focus", focus);
         document.removeEventListener("visibilitychange", visibility);
@@ -856,7 +1881,11 @@ var create = (sdk) => {
         canvas.current?.focus();
     }, [visible, display.kind]);
     useEffect(() => {
-      if (desired === "paused") input.current.clear();
+      if (desired === "paused") {
+        releaseCapture();
+        input.current.clear();
+      }
+      audio.current?.setActivity(desired, input.current.epoch);
       wake.current();
     }, [desired]);
     useEffect(() => {
@@ -891,10 +1920,11 @@ var create = (sdk) => {
               const epoch2 = input.current.epoch;
               const reply2 = await session.request({
                 kind: "activity",
-                activity: desiredActivity
+                activity: desiredActivity,
+                epoch: epoch2
               });
               if (canceled) break;
-              if (reply2.kind !== "activity" || reply2.activity !== desiredActivity)
+              if (reply2.kind !== "activity" || reply2.activity !== desiredActivity || reply2.epoch !== epoch2)
                 throw new Error(
                   "Doom could not change activity. Close and reopen the game."
                 );
@@ -910,6 +1940,7 @@ var create = (sdk) => {
             const reply = await session.request({
               kind: "frame",
               activity: "running",
+              epoch,
               ...input.current.take(),
               after
             });
@@ -921,6 +1952,7 @@ var create = (sdk) => {
                 "Doom returned an invalid frame. Close and reopen the game."
               );
             const update = reply.update;
+            audio.current?.apply(update.audio);
             if (update.kind === "frame") {
               const element = canvas.current;
               const drawing = element?.getContext("2d", { alpha: false });
@@ -940,6 +1972,7 @@ var create = (sdk) => {
               after = update.sequence;
               element.dataset.sequence = String(update.sequence);
               element.dataset.gameTime = String(update.elapsedMs);
+              element.dataset.gameTics = String(update.gameTics);
             }
             await wait(Math.max(0, 16 - (performance.now() - startedAt)));
           }
@@ -956,7 +1989,9 @@ var create = (sdk) => {
       void run();
       return () => {
         canceled = true;
+        releaseCapture();
         input.current.clear();
+        audio.current?.dispose();
         wakeLoop();
         session.dispose();
       };
@@ -978,10 +2013,27 @@ var create = (sdk) => {
         const { engine, iwad } = await validateGame(engineBytes, data.bytes);
         abort.signal.throwIfAborted();
         if (disposed(owner)) return;
+        const gameAudio = new GameAudio(parseAudioBank(iwad), (state) => {
+          if (!disposed(owner)) setAvailability(state);
+        });
+        owner.audio = gameAudio;
+        audio.current = gameAudio;
+        gameAudio.setPreference(muted, volume);
         const session = new GameSession(
           new Worker(new URL("./doom.worker.js", import.meta.url), {
             type: "module"
-          })
+          }),
+          15e3,
+          {
+            audio: (scene) => gameAudio.apply(scene),
+            disposed: (error) => {
+              gameAudio.dispose();
+              if (owner.state.kind === "starting" || owner.state.kind === "ready") {
+                owner.state = { kind: "failed", message: error.message };
+                setDisplay(owner.state);
+              }
+            }
+          }
         );
         owner.state = { kind: "starting", session };
         setDisplay(owner.state);
@@ -1001,6 +2053,7 @@ var create = (sdk) => {
         };
         setDisplay(owner.state);
       } catch (error) {
+        owner.audio?.dispose();
         if (owner.state.kind === "starting" || owner.state.kind === "ready")
           owner.state.session.dispose();
         if (!disposed(owner)) {
@@ -1023,7 +2076,55 @@ var create = (sdk) => {
         return;
       event.preventDefault();
       event.stopPropagation();
-      if (down) input.current.press(event.code, event.repeat);
+      if (down) {
+        if (event.code === "Escape" && !event.repeat) {
+          releaseCapture();
+          input.current.clear();
+          audio.current?.setActivity("running", input.current.epoch);
+          wake.current();
+        }
+        input.current.press(event.code, event.repeat);
+        if (event.nativeEvent.isTrusted) audio.current?.activate();
+      }
+    }
+    function resumeInteraction() {
+      if (display.kind !== "ready" || !visible || !document.hasFocus() || document.visibilityState !== "visible")
+        return false;
+      setPaused(false);
+      canvas.current?.focus();
+      activity2.current = "running";
+      audio.current?.setActivity("running", input.current.epoch);
+      wake.current();
+      return true;
+    }
+    function pointerDown(event) {
+      if (event.pointerType !== "mouse" || event.button !== 0 && event.button !== 2 || !resumeInteraction())
+        return;
+      event.preventDefault();
+      event.stopPropagation();
+      input.current.point(
+        event.pointerId,
+        event.clientX,
+        event.currentTarget.getBoundingClientRect().width
+      );
+      input.current.pointerButtons(event.buttons);
+      capture.current = event.pointerId;
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      } catch {
+        capture.current = null;
+        input.current.clearPointer();
+        audio.current?.setActivity(activity2.current, input.current.epoch);
+        wake.current();
+      }
+      if (event.nativeEvent.isTrusted) audio.current?.activate();
+    }
+    function cancelPointer(pointer) {
+      if (capture.current !== pointer) return;
+      releaseCapture();
+      input.current.clearPointer();
+      audio.current?.setActivity(activity2.current, input.current.epoch);
+      wake.current();
     }
     return /* @__PURE__ */ React.createElement(
       "section",
@@ -1042,6 +2143,7 @@ var create = (sdk) => {
             if (paused) {
               setPaused(false);
               canvas.current?.focus();
+              audio.current?.activate();
             } else {
               releaseInput();
               setPaused(true);
@@ -1049,7 +2151,46 @@ var create = (sdk) => {
           }
         },
         paused ? "Resume" : "Pause"
-      ), /* @__PURE__ */ React.createElement("span", null, "Click the game to play. Arrows or WASD move, F fires, Space uses, and Enter selects. Shift+Tab leaves the game."), /* @__PURE__ */ React.createElement(Button, { variant: "ghost", onClick: close }, "Close game")),
+      ), /* @__PURE__ */ React.createElement("span", null, "Move the mouse to aim. W/S move, A/D strafe, left click fires, and right click uses. Arrows turn, F/Space are alternatives, and Enter selects. Shift+Tab leaves the game."), /* @__PURE__ */ React.createElement(
+        Button,
+        {
+          disabled: display.kind !== "ready",
+          onClick: () => {
+            const next = !muted;
+            setMuted(next);
+            audio.current?.setPreference(next, volume);
+            audio.current?.activate();
+          }
+        },
+        muted ? "Unmute" : "Mute"
+      ), /* @__PURE__ */ React.createElement("label", { className: "hibi-doom-volume" }, "Volume", /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          "aria-label": "Doom volume",
+          type: "range",
+          min: "0",
+          max: "100",
+          value: Math.round(volume * 100),
+          disabled: display.kind !== "ready",
+          onChange: (event) => {
+            const next = Number(event.currentTarget.value) / 100;
+            setVolume(next);
+            audio.current?.setPreference(muted, next);
+            audio.current?.activate();
+          }
+        }
+      )), /* @__PURE__ */ React.createElement(
+        Button,
+        {
+          variant: "ghost",
+          onClick: () => {
+            releaseInput();
+            audio.current?.dispose();
+            close();
+          }
+        },
+        "Close game"
+      )),
       /* @__PURE__ */ React.createElement("div", { className: "hibi-doom-screen" }, /* @__PURE__ */ React.createElement(
         "canvas",
         {
@@ -1058,14 +2199,59 @@ var create = (sdk) => {
           height,
           tabIndex: display.kind === "ready" ? 0 : -1,
           "aria-label": "Doom canvas",
-          onFocus: () => setCanvasFocused(true),
+          onFocus: () => {
+            input.current.resetOrigin();
+            setCanvasFocused(true);
+          },
           onBlur: () => {
             releaseInput();
             setCanvasFocused(false);
           },
-          onClick: () => {
-            setPaused(false);
-            canvas.current?.focus();
+          onClick: (event) => {
+            if (resumeInteraction() && event.nativeEvent.isTrusted)
+              audio.current?.activate();
+          },
+          onPointerDown: pointerDown,
+          onPointerMove: (event) => {
+            if (event.pointerType === "mouse" && activity2.current === "running") {
+              if (capture.current === event.pointerId)
+                input.current.pointerButtons(event.buttons);
+              input.current.point(
+                event.pointerId,
+                event.clientX,
+                event.currentTarget.getBoundingClientRect().width
+              );
+              if (capture.current === event.pointerId && !input.current.pointerHeld)
+                releaseCapture();
+            }
+          },
+          onPointerEnter: (event) => {
+            if (capture.current === null) input.current.resetOrigin();
+            if (event.pointerType === "mouse" && activity2.current === "running")
+              input.current.point(
+                event.pointerId,
+                event.clientX,
+                event.currentTarget.getBoundingClientRect().width
+              );
+          },
+          onPointerLeave: () => {
+            if (capture.current === null) input.current.resetOrigin();
+          },
+          onPointerUp: (event) => {
+            if (event.pointerType !== "mouse" || capture.current !== event.pointerId)
+              return;
+            event.preventDefault();
+            event.stopPropagation();
+            input.current.pointerButtons(event.buttons);
+            if (!input.current.pointerHeld) releaseCapture();
+          },
+          onPointerCancel: (event) => cancelPointer(event.pointerId),
+          onLostPointerCapture: (event) => cancelPointer(event.pointerId),
+          onContextMenu: (event) => {
+            if (display.kind === "ready" && activity2.current === "running" && event.button === 2) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
           },
           onKeyDown: (event) => keyboard(event, true),
           onKeyUp: (event) => keyboard(event, false)
@@ -1080,6 +2266,15 @@ var create = (sdk) => {
         },
         display.kind === "failed" ? display.message : display.kind === "loading" && display.progress.kind === "downloading" ? `${Math.floor(display.progress.completedBytes / display.progress.totalBytes * 100)}% downloaded. The unchanged shareware episode is saved for offline play.` : "The first Play downloads the shareware episode automatically. Later games use verified cached data."
       )), display.kind === "ready" && desired === "paused" && visible && /* @__PURE__ */ React.createElement("div", { className: "hibi-doom-paused", "aria-live": "polite" }, "Paused. Click the game to resume.")),
+      display.kind === "ready" && /* @__PURE__ */ React.createElement(
+        "p",
+        {
+          className: "hibi-doom-audio-status",
+          role: "status",
+          "data-audio": availability.kind
+        },
+        availability.kind === "unavailable" ? `Sound is unavailable. ${availability.message}` : availability.kind === "waiting" ? "Click or press a game key for sound." : availability.kind === "muted" ? "Sound is muted." : "Sound is on. Music uses an approximate synthesizer."
+      ),
       display.kind === "ready" && !display.persistent && /* @__PURE__ */ React.createElement("p", { className: "hibi-doom-cache-warning", role: "status" }, "The game is ready, but Hibi could not save its data. Connect again next time."),
       /* @__PURE__ */ React.createElement(ControlRow, { className: "hibi-doom-legal" }, /* @__PURE__ */ React.createElement("span", null, "Doom engine. Copyright id Software, Simon Howard, and contributors. GNU GPL version 3 only. No warranty. Redistribution permitted under GPL."), /* @__PURE__ */ React.createElement(Button, { variant: "ghost", onClick: openLicenses }, "License and source"))
     );

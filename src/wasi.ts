@@ -1,4 +1,7 @@
 // Copyright (C) 2026 Ralph Bibera. SPDX-License-Identifier: GPL-3.0-only
+
+import { parseAudioBank } from './audio-bank.ts'
+import { type AudioScene, GameSound } from './audio-scene.ts'
 import { frameBytes } from './model.ts'
 
 type Descriptor =
@@ -18,14 +21,24 @@ export function createWasiHost(
   iwad: Uint8Array,
   buffer: () => ArrayBuffer,
   clock: () => number,
+  notify: (scene: AudioScene) => void = () => {},
 ) {
+  const readClock = () => {
+    const at = clock()
+    if (!Number.isFinite(at) || at < 0)
+      throw new Error('Invalid Doom active clock.')
+    return at
+  }
+  const sound = new GameSound(parseAudioBank(iwad), readClock, notify)
   const descriptors = new Map<number, Descriptor>([
     [1, { kind: 'log' }],
     [2, { kind: 'log' }],
     [3, { kind: 'directory' }],
   ])
   const utf8 = new TextDecoder('utf-8', { fatal: true })
-  let pointer: number | null = null
+  let captured = false
+  const indices = new Uint8Array(320 * 200)
+  const palette = new Uint8Array(256 * 3)
   let sequence = 0
   let log = ''
   const bytes = () => new Uint8Array(buffer())
@@ -69,10 +82,7 @@ export function createWasiHost(
   const imports = {
     hibi: {
       clock_ms: () => {
-        const milliseconds = clock()
-        if (!Number.isFinite(milliseconds) || milliseconds < 0)
-          throw new Error('Invalid Doom active clock.')
-        return milliseconds | 0
+        return readClock() | 0
       },
       sleep_ms: (milliseconds: number) => {
         if (
@@ -82,11 +92,37 @@ export function createWasiHost(
         )
           throw new Error('Invalid Doom sleep duration.')
       },
-      draw_rgba: (address: number) => {
-        extent(address, frameBytes)
-        pointer = address
+      draw_indexed: (address: number, paletteAddress: number) => {
+        const pixels = extent(address, indices.length)
+        const colors = extent(paletteAddress, palette.length)
+        indices.set(pixels)
+        palette.set(colors)
+        captured = true
         sequence++
       },
+      sfx_start: (
+        channel: number,
+        sample: number,
+        volume: number,
+        separation: number,
+      ) => sound.start(channel, sample, volume, separation),
+      sfx_stop: (channel: number) => sound.stop(channel),
+      sfx_params: (channel: number, volume: number, separation: number) =>
+        sound.update(channel, volume, separation),
+      sfx_playing: (channel: number) => sound.playing(channel),
+      music_register: (address: number, length: number) => {
+        if (length < 16 || length > 65536)
+          throw new Error('Invalid Doom music registration extent.')
+        return sound.register(extent(address, length))
+      },
+      music_unregister: (handle: number) => sound.unregister(handle),
+      music_play: (handle: number, looping: number) =>
+        sound.playMusic(handle, looping),
+      music_stop: () => sound.stopMusic(),
+      music_pause: () => sound.pauseMusic(),
+      music_resume: () => sound.resumeMusic(),
+      music_volume: (volume: number) => sound.volume(volume),
+      music_playing: () => sound.musicPlaying(),
     },
     wasi_snapshot_preview1: {
       fd_close: (fd: number) => {
@@ -224,6 +260,7 @@ export function createWasiHost(
   }
   return {
     imports,
+    sound,
     get sequence() {
       return sequence
     },
@@ -233,14 +270,24 @@ export function createWasiHost(
     frame(after = 0) {
       if (!Number.isSafeInteger(after) || after < 0 || after > sequence)
         throw new Error('Invalid Doom frame cursor.')
-      return pointer === null || after === sequence
-        ? null
-        : {
-            sequence,
-            width: 640 as const,
-            height: 400 as const,
-            pixels: extent(pointer, frameBytes).slice(),
+      if (!captured || after === sequence) return null
+      const pixels = new Uint8Array(frameBytes)
+      const indexView = new DataView(indices.buffer)
+      const colorView = new DataView(palette.buffer)
+      for (let y = 0; y < 200; y++) {
+        let output = y * 2 * 640 * 4
+        for (let x = 0; x < 320; x++) {
+          const color = indexView.getUint8(y * 320 + x) * 3
+          for (let duplicate = 0; duplicate < 2; duplicate++) {
+            pixels[output++] = colorView.getUint8(color)
+            pixels[output++] = colorView.getUint8(color + 1)
+            pixels[output++] = colorView.getUint8(color + 2)
+            pixels[output++] = 255
           }
+        }
+        pixels.copyWithin(output, output - 640 * 4, output)
+      }
+      return { sequence, width: 640 as const, height: 400 as const, pixels }
     },
   }
 }

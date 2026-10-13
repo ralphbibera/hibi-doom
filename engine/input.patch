@@ -1,0 +1,14 @@
+--- vendor/doomgeneric/doomgeneric/g_game.c
++++ vendor/doomgeneric/doomgeneric/g_game.c
+@@ -827,7 +827,10 @@
+ 		 
+       case ev_mouse: 
+         SetMouseButtons(ev->data1);
+-	mousex = ev->data2*(mouseSensitivity+5)/10; 
++	/* Keep accepted motion until G_BuildTiccmd consumes it. */
++	mousex += ev->data2*(mouseSensitivity+5)/10;
++	if (mousex > 2048) mousex = 2048;
++	else if (mousex < -2048) mousex = -2048;
+ 	mousey = ev->data3*(mouseSensitivity+5)/10; 
+ 	return true;    // eat events 
+  		 

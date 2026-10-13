@@ -27,6 +27,15 @@ export async function reference(engine, iwad, clock) {
     step() {
       instance.exports.doom_tick()
     },
+    turn(delta) {
+      if (instance.exports.doom_mouse(delta) !== 0)
+        throw new Error('Invalid native mouse input.')
+    },
+    resetTurn() {
+      instance.exports.doom_mouse_reset()
+    },
+    exports: instance.exports,
+    memory: () => memory.buffer,
     key(action, pressed) {
       if (held.has(action) === pressed) return
       if (instance.exports.doom_key(pressed ? 1 : 0, keys[action]) !== 0)

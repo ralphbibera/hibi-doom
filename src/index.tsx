@@ -1,7 +1,9 @@
 import type { AddonContext, AddonViewProps } from '@hibi/addon-sdk/api'
 import type { CapabilityFactory } from '@hibi/addon-sdk/sdk-loader'
-import type { KeyboardEvent } from 'react'
+import type { KeyboardEvent, PointerEvent } from 'react'
 import metadata from '../addon/bundle.json' with { type: 'json' }
+import { type AudioAvailability, GameAudio } from './audio.ts'
+import { parseAudioBank } from './audio-bank.ts'
 import { loadArtifact, parseBundle, readPackageFile, sha256 } from './bundle.ts'
 import { GameInput, keys } from './input.ts'
 import { IwadCache, type IwadProgress } from './iwad.ts'
@@ -25,6 +27,7 @@ type Display =
 
 interface Lifetime {
   state: Display
+  audio: GameAudio | null
 }
 const disposed = (owner: Lifetime) => owner.state.kind === 'disposed'
 
@@ -47,6 +50,8 @@ const create: CapabilityFactory = (sdk) => {
   }: AddonViewProps & { openLicenses: () => void; cache: IwadCache }) {
     const canvas = useRef<HTMLCanvasElement>(null)
     const input = useRef(new GameInput())
+    const capture = useRef<number | null>(null)
+    const audio = useRef<GameAudio | null>(null)
     const lifetime = useRef<Lifetime | null>(null)
     const wake = useRef<() => void>(() => {})
     const [display, setDisplay] = useState<Display>({
@@ -55,6 +60,11 @@ const create: CapabilityFactory = (sdk) => {
       progress: { kind: 'checking' },
     })
     const [paused, setPaused] = useState(false)
+    const [availability, setAvailability] = useState<AudioAvailability>({
+      kind: 'waiting',
+    })
+    const [muted, setMuted] = useState(false)
+    const [volume, setVolume] = useState(0.7)
     const [canvasFocused, setCanvasFocused] = useState(false)
     const [focused, setFocused] = useState(document.hasFocus())
     const [documentVisible, setDocumentVisible] = useState(
@@ -72,9 +82,20 @@ const create: CapabilityFactory = (sdk) => {
     const activity = useRef(desired)
     activity.current = desired
 
+    function releaseCapture() {
+      const pointer = capture.current
+      capture.current = null
+      const element = canvas.current
+      if (pointer !== null && element?.hasPointerCapture(pointer))
+        element.releasePointerCapture(pointer)
+      input.current.resetOrigin()
+    }
+
     function releaseInput() {
+      releaseCapture()
       input.current.clear()
       activity.current = 'paused'
+      audio.current?.setActivity('paused', input.current.epoch)
       wake.current()
     }
 
@@ -85,6 +106,7 @@ const create: CapabilityFactory = (sdk) => {
           abort: new AbortController(),
           progress: { kind: 'checking' },
         },
+        audio: null,
       }
       lifetime.current = owner
       setDisplay(owner.state)
@@ -100,11 +122,14 @@ const create: CapabilityFactory = (sdk) => {
       }
       const dispose = () => {
         if (disposed(owner)) return
-        releaseInput()
-        if (owner.state.kind === 'loading') owner.state.abort.abort()
-        if (owner.state.kind === 'starting' || owner.state.kind === 'ready')
-          owner.state.session.dispose()
+        const previous = owner.state
         owner.state = { kind: 'disposed' }
+        releaseInput()
+        if (previous.kind === 'loading') previous.abort.abort()
+        if (previous.kind === 'starting' || previous.kind === 'ready')
+          previous.session.dispose()
+        owner.audio?.dispose()
+        if (audio.current === owner.audio) audio.current = null
         window.removeEventListener('blur', blur)
         window.removeEventListener('focus', focus)
         document.removeEventListener('visibilitychange', visibility)
@@ -128,7 +153,11 @@ const create: CapabilityFactory = (sdk) => {
     }, [visible, display.kind])
 
     useEffect(() => {
-      if (desired === 'paused') input.current.clear()
+      if (desired === 'paused') {
+        releaseCapture()
+        input.current.clear()
+      }
+      audio.current?.setActivity(desired, input.current.epoch)
       wake.current()
     }, [desired])
 
@@ -169,11 +198,13 @@ const create: CapabilityFactory = (sdk) => {
               const reply = await session.request({
                 kind: 'activity',
                 activity: desiredActivity,
+                epoch,
               })
               if (canceled) break
               if (
                 reply.kind !== 'activity' ||
-                reply.activity !== desiredActivity
+                reply.activity !== desiredActivity ||
+                reply.epoch !== epoch
               )
                 throw new Error(
                   'Doom could not change activity. Close and reopen the game.',
@@ -190,6 +221,7 @@ const create: CapabilityFactory = (sdk) => {
             const reply = await session.request({
               kind: 'frame',
               activity: 'running',
+              epoch,
               ...input.current.take(),
               after,
             })
@@ -201,6 +233,7 @@ const create: CapabilityFactory = (sdk) => {
                 'Doom returned an invalid frame. Close and reopen the game.',
               )
             const update = reply.update
+            audio.current?.apply(update.audio)
             if (update.kind === 'frame') {
               const element = canvas.current
               const drawing = element?.getContext('2d', { alpha: false })
@@ -220,6 +253,7 @@ const create: CapabilityFactory = (sdk) => {
               after = update.sequence
               element.dataset.sequence = String(update.sequence)
               element.dataset.gameTime = String(update.elapsedMs)
+              element.dataset.gameTics = String(update.gameTics)
             }
             await wait(Math.max(0, 16 - (performance.now() - startedAt)))
           }
@@ -239,7 +273,9 @@ const create: CapabilityFactory = (sdk) => {
       void run()
       return () => {
         canceled = true
+        releaseCapture()
         input.current.clear()
+        audio.current?.dispose()
         wakeLoop()
         session.dispose()
       }
@@ -262,10 +298,30 @@ const create: CapabilityFactory = (sdk) => {
         const { engine, iwad } = await validateGame(engineBytes, data.bytes)
         abort.signal.throwIfAborted()
         if (disposed(owner)) return
+        const gameAudio = new GameAudio(parseAudioBank(iwad), (state) => {
+          if (!disposed(owner)) setAvailability(state)
+        })
+        owner.audio = gameAudio
+        audio.current = gameAudio
+        gameAudio.setPreference(muted, volume)
         const session = new GameSession(
           new Worker(new URL('./doom.worker.js', import.meta.url), {
             type: 'module',
           }),
+          15000,
+          {
+            audio: (scene) => gameAudio.apply(scene),
+            disposed: (error) => {
+              gameAudio.dispose()
+              if (
+                owner.state.kind === 'starting' ||
+                owner.state.kind === 'ready'
+              ) {
+                owner.state = { kind: 'failed', message: error.message }
+                setDisplay(owner.state)
+              }
+            },
+          },
         )
         owner.state = { kind: 'starting', session }
         setDisplay(owner.state)
@@ -285,6 +341,7 @@ const create: CapabilityFactory = (sdk) => {
         }
         setDisplay(owner.state)
       } catch (error) {
+        owner.audio?.dispose()
         if (owner.state.kind === 'starting' || owner.state.kind === 'ready')
           owner.state.session.dispose()
         if (!disposed(owner)) {
@@ -316,7 +373,67 @@ const create: CapabilityFactory = (sdk) => {
         return
       event.preventDefault()
       event.stopPropagation()
-      if (down) input.current.press(event.code, event.repeat)
+      if (down) {
+        if (event.code === 'Escape' && !event.repeat) {
+          releaseCapture()
+          input.current.clear()
+          audio.current?.setActivity('running', input.current.epoch)
+          wake.current()
+        }
+        input.current.press(event.code, event.repeat)
+        if (event.nativeEvent.isTrusted) audio.current?.activate()
+      }
+    }
+
+    function resumeInteraction() {
+      if (
+        display.kind !== 'ready' ||
+        !visible ||
+        !document.hasFocus() ||
+        document.visibilityState !== 'visible'
+      )
+        return false
+      setPaused(false)
+      canvas.current?.focus()
+      activity.current = 'running'
+      audio.current?.setActivity('running', input.current.epoch)
+      wake.current()
+      return true
+    }
+
+    function pointerDown(event: PointerEvent<HTMLCanvasElement>) {
+      if (
+        event.pointerType !== 'mouse' ||
+        (event.button !== 0 && event.button !== 2) ||
+        !resumeInteraction()
+      )
+        return
+      event.preventDefault()
+      event.stopPropagation()
+      input.current.point(
+        event.pointerId,
+        event.clientX,
+        event.currentTarget.getBoundingClientRect().width,
+      )
+      input.current.pointerButtons(event.buttons)
+      capture.current = event.pointerId
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId)
+      } catch {
+        capture.current = null
+        input.current.clearPointer()
+        audio.current?.setActivity(activity.current, input.current.epoch)
+        wake.current()
+      }
+      if (event.nativeEvent.isTrusted) audio.current?.activate()
+    }
+
+    function cancelPointer(pointer: number) {
+      if (capture.current !== pointer) return
+      releaseCapture()
+      input.current.clearPointer()
+      audio.current?.setActivity(activity.current, input.current.epoch)
+      wake.current()
     }
 
     return (
@@ -338,6 +455,7 @@ const create: CapabilityFactory = (sdk) => {
               if (paused) {
                 setPaused(false)
                 canvas.current?.focus()
+                audio.current?.activate()
               } else {
                 releaseInput()
                 setPaused(true)
@@ -347,10 +465,46 @@ const create: CapabilityFactory = (sdk) => {
             {paused ? 'Resume' : 'Pause'}
           </Button>
           <span>
-            Click the game to play. Arrows or WASD move, F fires, Space uses,
-            and Enter selects. Shift+Tab leaves the game.
+            Move the mouse to aim. W/S move, A/D strafe, left click fires, and
+            right click uses. Arrows turn, F/Space are alternatives, and Enter
+            selects. Shift+Tab leaves the game.
           </span>
-          <Button variant="ghost" onClick={close}>
+          <Button
+            disabled={display.kind !== 'ready'}
+            onClick={() => {
+              const next = !muted
+              setMuted(next)
+              audio.current?.setPreference(next, volume)
+              audio.current?.activate()
+            }}
+          >
+            {muted ? 'Unmute' : 'Mute'}
+          </Button>
+          <label className="hibi-doom-volume">
+            Volume
+            <input
+              aria-label="Doom volume"
+              type="range"
+              min="0"
+              max="100"
+              value={Math.round(volume * 100)}
+              disabled={display.kind !== 'ready'}
+              onChange={(event) => {
+                const next = Number(event.currentTarget.value) / 100
+                setVolume(next)
+                audio.current?.setPreference(muted, next)
+                audio.current?.activate()
+              }}
+            />
+          </label>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              releaseInput()
+              audio.current?.dispose()
+              close()
+            }}
+          >
             Close game
           </Button>
         </ControlRow>
@@ -361,14 +515,75 @@ const create: CapabilityFactory = (sdk) => {
             height={height}
             tabIndex={display.kind === 'ready' ? 0 : -1}
             aria-label="Doom canvas"
-            onFocus={() => setCanvasFocused(true)}
+            onFocus={() => {
+              input.current.resetOrigin()
+              setCanvasFocused(true)
+            }}
             onBlur={() => {
               releaseInput()
               setCanvasFocused(false)
             }}
-            onClick={() => {
-              setPaused(false)
-              canvas.current?.focus()
+            onClick={(event) => {
+              if (resumeInteraction() && event.nativeEvent.isTrusted)
+                audio.current?.activate()
+            }}
+            onPointerDown={pointerDown}
+            onPointerMove={(event) => {
+              if (
+                event.pointerType === 'mouse' &&
+                activity.current === 'running'
+              ) {
+                if (capture.current === event.pointerId)
+                  input.current.pointerButtons(event.buttons)
+                input.current.point(
+                  event.pointerId,
+                  event.clientX,
+                  event.currentTarget.getBoundingClientRect().width,
+                )
+                if (
+                  capture.current === event.pointerId &&
+                  !input.current.pointerHeld
+                )
+                  releaseCapture()
+              }
+            }}
+            onPointerEnter={(event) => {
+              if (capture.current === null) input.current.resetOrigin()
+              if (
+                event.pointerType === 'mouse' &&
+                activity.current === 'running'
+              )
+                input.current.point(
+                  event.pointerId,
+                  event.clientX,
+                  event.currentTarget.getBoundingClientRect().width,
+                )
+            }}
+            onPointerLeave={() => {
+              if (capture.current === null) input.current.resetOrigin()
+            }}
+            onPointerUp={(event) => {
+              if (
+                event.pointerType !== 'mouse' ||
+                capture.current !== event.pointerId
+              )
+                return
+              event.preventDefault()
+              event.stopPropagation()
+              input.current.pointerButtons(event.buttons)
+              if (!input.current.pointerHeld) releaseCapture()
+            }}
+            onPointerCancel={(event) => cancelPointer(event.pointerId)}
+            onLostPointerCapture={(event) => cancelPointer(event.pointerId)}
+            onContextMenu={(event) => {
+              if (
+                display.kind === 'ready' &&
+                activity.current === 'running' &&
+                event.button === 2
+              ) {
+                event.preventDefault()
+                event.stopPropagation()
+              }
             }}
             onKeyDown={(event) => keyboard(event, true)}
             onKeyUp={(event) => keyboard(event, false)}
@@ -410,6 +625,21 @@ const create: CapabilityFactory = (sdk) => {
             </div>
           )}
         </div>
+        {display.kind === 'ready' && (
+          <p
+            className="hibi-doom-audio-status"
+            role="status"
+            data-audio={availability.kind}
+          >
+            {availability.kind === 'unavailable'
+              ? `Sound is unavailable. ${availability.message}`
+              : availability.kind === 'waiting'
+                ? 'Click or press a game key for sound.'
+                : availability.kind === 'muted'
+                  ? 'Sound is muted.'
+                  : 'Sound is on. Music uses an approximate synthesizer.'}
+          </p>
+        )}
         {display.kind === 'ready' && !display.persistent && (
           <p className="hibi-doom-cache-warning" role="status">
             The game is ready, but Hibi could not save its data. Connect again
