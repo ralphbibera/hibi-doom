@@ -42,6 +42,27 @@ const create: CapabilityFactory = (sdk) => {
   const { Button, ControlRow, Panel, PanelMessage } = ui
   const cleanups = new Set<() => void>()
 
+  function SkullIcon({ size = 24, strokeWidth = 2 }) {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M8 21v-4l-3-2V9a7 7 0 0 1 14 0v6l-3 2v4Z" />
+        <circle cx="9" cy="11" r="1.5" />
+        <circle cx="15" cy="11" r="1.5" />
+        <path d="m11 16 1-2 1 2M11 18v3m2-3v3" />
+      </svg>
+    )
+  }
+
   function DoomTab({
     openLicenses,
     visible,
@@ -850,6 +871,14 @@ const create: CapabilityFactory = (sdk) => {
         run: () => {
           view.open({ id: 'game', focus: true })
         },
+      })
+      context.toolbar.register({
+        id: 'play',
+        label: 'Play Doom',
+        location: 'titlebar',
+        tooltip: 'Play Doom',
+        icon: SkullIcon,
+        commandId: 'play',
       })
     },
     stop() {

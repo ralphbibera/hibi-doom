@@ -16,13 +16,15 @@ If the owner supplies a ZIP, extract it first.
 2. Select the prepared addon folder containing `hibi-addon.json`.
 3. Review **Doom** and the trust notice, then confirm installation.
 4. Enable **Doom** under **Settings > Addons**. Hibi installs the addon disabled.
-5. Choose **Play Doom** from the command palette or app menu.
+5. Choose **Play Doom** from the command palette or app menu. With the [titlebar compatibility build](https://github.com/ralphbibera/hibi-doom/blob/main/docs/development.md#prepare-the-development-tools), click the skull immediately left of the document view button in the window's top bar.
 
 Connect to the internet for the first game. Doom shows download progress and starts automatically. You do not need Git, Node.js, or a manual engine or game download.
 
 **Settings > Addons > Install from URL** also accepts a public HTTPS addon ZIP. It cannot download this private repository.
 
 When the title appears, click the game, press `Enter`, and choose **New Game**, the first episode, and a difficulty. Run **Play Doom** again to return to an open game.
+
+The titlebar skull requires the supplied Hibi compatibility patch. Stock Hibi API version 2 still provides **Play Doom** through the command palette and app menu. In the compatibility build, the skull stays visible when the formatting toolbar is hidden or full. You can hide it or choose **Menu only** under **Settings > Appearance > Arrange toolbar actions**. Menu-only actions appear under **More titlebar actions** in the top bar. Disabling or removing Doom removes its button.
 
 ## Controls
 

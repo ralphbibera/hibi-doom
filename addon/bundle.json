@@ -25,24 +25,24 @@
     }
   },
   "source": {
-    "bytes": 3151729,
-    "sha256": "5c565f10fac02cf27be57fed50845cf9080c50c148e2e4e8ee5a86a22d6e00ed",
+    "bytes": 3161384,
+    "sha256": "9336e355174596124c7b70d2e8236bfe099665b4ca0c1117877929d09961b26d",
     "chunks": [
       {
         "path": "assets/source/000.json",
         "jsonBytes": 4194317,
         "decodedBytes": 3145728,
-        "sha256": "061a766cc830b65bd2647130a7dd153d1563e4c0d425c2abc415ad9aba4972ba"
+        "sha256": "61f114824fcd63d9514d11f0e4271516c65edc659879087beed754fc9bb23d15"
       },
       {
         "path": "assets/source/001.json",
-        "jsonBytes": 8017,
-        "decodedBytes": 6001,
-        "sha256": "39df77aaaa846620c25fc339760d8b6b243e58a030c053485a92a8a321803141"
+        "jsonBytes": 20889,
+        "decodedBytes": 15656,
+        "sha256": "2e6071ea46fc554918abc0d55ee2e94379dfb5fd1d72208f24c941d57477b921"
       }
     ],
     "archive": "tar.gz",
-    "exportName": "hibi-doom-0.4.0-source.tar.gz"
+    "exportName": "hibi-doom-0.4.1-source.tar.gz"
   },
   "notices": {
     "path": "LICENSES.md",

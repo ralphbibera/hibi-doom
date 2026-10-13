@@ -1,5 +1,5 @@
 // doom:bundle
-var bundle_default = { schema: 2, engine: { bytes: 456114, sha256: "33aa16f84b0166fcc1ff150ee90f12e89593cacbd005fd3b7f35c88eecb01416", chunks: [{ path: "assets/engine/000.json", jsonBytes: 608165, decodedBytes: 456114, sha256: "33aa16f84b0166fcc1ff150ee90f12e89593cacbd005fd3b7f35c88eecb01416" }], abi: "doomgeneric-wasi-v2" }, iwad: { bytes: 4196020, sha256: "1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771", edition: "doom-1.9-shareware", license: "LicenseRef-DOOM-shareware", feed: { url: "https://gist.githubusercontent.com/ralphbibera/1a077d178d8544746423ddd84a2ca1ef/raw/8a5669e288bfa19ba9d08aaa0ba8be34f02113ef/manifest.json", bytes: 1715, sha256: "90215e77c9623360d404489c88826a5310fd2c5f566cb23e09184a0246ae56e1" } }, source: { bytes: 3151729, sha256: "5c565f10fac02cf27be57fed50845cf9080c50c148e2e4e8ee5a86a22d6e00ed", chunks: [{ path: "assets/source/000.json", jsonBytes: 4194317, decodedBytes: 3145728, sha256: "061a766cc830b65bd2647130a7dd153d1563e4c0d425c2abc415ad9aba4972ba" }, { path: "assets/source/001.json", jsonBytes: 8017, decodedBytes: 6001, sha256: "39df77aaaa846620c25fc339760d8b6b243e58a030c053485a92a8a321803141" }], archive: "tar.gz", exportName: "hibi-doom-0.4.0-source.tar.gz" }, notices: { path: "LICENSES.md", bytes: 122611, sha256: "4170a918b6ad10a5a74d1c59ad615784a39294c61f1df8b3790052993d6250d0" } };
+var bundle_default = { schema: 2, engine: { bytes: 456114, sha256: "33aa16f84b0166fcc1ff150ee90f12e89593cacbd005fd3b7f35c88eecb01416", chunks: [{ path: "assets/engine/000.json", jsonBytes: 608165, decodedBytes: 456114, sha256: "33aa16f84b0166fcc1ff150ee90f12e89593cacbd005fd3b7f35c88eecb01416" }], abi: "doomgeneric-wasi-v2" }, iwad: { bytes: 4196020, sha256: "1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771", edition: "doom-1.9-shareware", license: "LicenseRef-DOOM-shareware", feed: { url: "https://gist.githubusercontent.com/ralphbibera/1a077d178d8544746423ddd84a2ca1ef/raw/8a5669e288bfa19ba9d08aaa0ba8be34f02113ef/manifest.json", bytes: 1715, sha256: "90215e77c9623360d404489c88826a5310fd2c5f566cb23e09184a0246ae56e1" } }, source: { bytes: 3161384, sha256: "9336e355174596124c7b70d2e8236bfe099665b4ca0c1117877929d09961b26d", chunks: [{ path: "assets/source/000.json", jsonBytes: 4194317, decodedBytes: 3145728, sha256: "61f114824fcd63d9514d11f0e4271516c65edc659879087beed754fc9bb23d15" }, { path: "assets/source/001.json", jsonBytes: 20889, decodedBytes: 15656, sha256: "2e6071ea46fc554918abc0d55ee2e94379dfb5fd1d72208f24c941d57477b921" }], archive: "tar.gz", exportName: "hibi-doom-0.4.1-source.tar.gz" }, notices: { path: "LICENSES.md", bytes: 122611, sha256: "4170a918b6ad10a5a74d1c59ad615784a39294c61f1df8b3790052993d6250d0" } };
 
 // src/audio-scene.ts
 var audioNotificationBudget = 256;
@@ -909,7 +909,7 @@ var pins_default = {
 // package.json
 var package_default = {
   name: "hibi-doom",
-  version: "0.4.0",
+  version: "0.4.1",
   private: true,
   type: "module",
   license: "GPL-3.0-only",
@@ -1786,6 +1786,26 @@ var create = (sdk) => {
   const { useEffect, useRef, useState } = React;
   const { Button, ControlRow, Panel, PanelMessage } = ui;
   const cleanups = /* @__PURE__ */ new Set();
+  function SkullIcon({ size: size2 = 24, strokeWidth = 2 }) {
+    return /* @__PURE__ */ React.createElement(
+      "svg",
+      {
+        width: size2,
+        height: size2,
+        viewBox: "0 0 24 24",
+        fill: "none",
+        stroke: "currentColor",
+        strokeWidth,
+        strokeLinecap: "round",
+        strokeLinejoin: "round",
+        "aria-hidden": "true"
+      },
+      /* @__PURE__ */ React.createElement("path", { d: "M8 21v-4l-3-2V9a7 7 0 0 1 14 0v6l-3 2v4Z" }),
+      /* @__PURE__ */ React.createElement("circle", { cx: "9", cy: "11", r: "1.5" }),
+      /* @__PURE__ */ React.createElement("circle", { cx: "15", cy: "11", r: "1.5" }),
+      /* @__PURE__ */ React.createElement("path", { d: "m11 16 1-2 1 2M11 18v3m2-3v3" })
+    );
+  }
   function DoomTab({
     openLicenses,
     visible,
@@ -2399,6 +2419,14 @@ var create = (sdk) => {
         run: () => {
           view.open({ id: "game", focus: true });
         }
+      });
+      context.toolbar.register({
+        id: "play",
+        label: "Play Doom",
+        location: "titlebar",
+        tooltip: "Play Doom",
+        icon: SkullIcon,
+        commandId: "play"
       });
     },
     stop() {

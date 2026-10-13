@@ -901,6 +901,10 @@ export async function runUrlInstallAcceptance(options = {}) {
       },
       { addonId: manifest.id, enabled },
     )
+    if (!enabled)
+      await page
+        .locator('.titlebar [data-toolbar-id="hibi-doom.play"]')
+        .waitFor({ state: 'detached' })
   }
   const install = async (url) => {
     await openSettings()
@@ -948,7 +952,16 @@ export async function runUrlInstallAcceptance(options = {}) {
     const before = await snapshotRenderer()
     const mainBefore = await snapshotMain()
     const selectedAt = await page.evaluate(() => performance.now())
-    await command()
+    await backToApp()
+    const play = page.locator(
+      '.titlebar-actions > [data-toolbar-id="hibi-doom.play"]',
+    )
+    await play.click()
+    await play.click()
+    assert.equal(
+      await page.getByRole('tab', { name: 'Doom', exact: true }).count(),
+      1,
+    )
     await canvas().waitFor()
     const gameRegion = page.getByRole('region', {
       name: 'Doom game',
@@ -1226,7 +1239,6 @@ export async function runUrlInstallAcceptance(options = {}) {
       )
       assert.equal(manifest.apiVersion, 2)
       assert.equal(manifest.kind, 'extension')
-      assert.equal(manifest.activation, 'command')
       assert.equal(manifest.defaultEnabled, false)
       assert.deepEqual(manifest.capabilities, ['ui'])
       assert.deepEqual(manifest.network.origins, [
@@ -1389,7 +1401,7 @@ export async function runUrlInstallAcceptance(options = {}) {
         certificate: observation.certificate,
       }
     })
-    await check('stock native app and observers', async () => {
+    await check('patched native app and observers', async () => {
       process.env.HIBI_TEST_SHOW_WINDOWS = '1'
       const hostTests = await import(
         pathToFileURL(join(checkout, 'tests/electron.mjs'))
@@ -1499,7 +1511,7 @@ export async function runUrlInstallAcceptance(options = {}) {
       assert.equal(
         existing,
         null,
-        'Stock host must not contain the compiled native Doom addon',
+        'The host must not contain the compiled native Doom addon',
       )
       observation.nativeRuntime = runtime
       return { runtime, existingDoom: existing }
@@ -1580,7 +1592,38 @@ export async function runUrlInstallAcceptance(options = {}) {
         observation.noteBefore = await page.evaluate(() =>
           window.hibi.getDocument(),
         )
-        return observation.noteBefore
+        const action = page.locator(
+          '.titlebar-actions > [data-toolbar-id="hibi-doom.play"]',
+        )
+        await action.waitFor()
+        const titlebar = await action.evaluate((button) => {
+          const group = button.parentElement
+          const view = document.querySelector('.view-switch')
+          const icon = button.querySelector('svg')
+          return {
+            beforeView:
+              group.nextElementSibling === view &&
+              button.getBoundingClientRect().right <=
+                view.getBoundingClientRect().left,
+            firstAction: group.firstElementChild === button,
+            iconSize: icon.getAttribute('width'),
+            strokeWidth: icon.getAttribute('stroke-width'),
+          }
+        })
+        assert.deepEqual(titlebar, {
+          beforeView: true,
+          firstAction: true,
+          iconSize: '16',
+          strokeWidth: '1.5',
+        })
+        assert.equal(
+          await page
+            .locator('.editor-toolbar [data-toolbar-id="hibi-doom.play"]')
+            .count(),
+          0,
+        )
+        assert.equal(workerCount(), 0)
+        return { note: observation.noteBefore, titlebar }
       },
     )
     await check(
@@ -2518,6 +2561,10 @@ export async function runUrlInstallAcceptance(options = {}) {
         await waitForWorkers(0)
         const removed = await snapshotRenderer()
         assert.equal(removed.active, 0)
+        assert.equal(
+          await page.locator('[data-toolbar-id="hibi-doom.play"]').count(),
+          0,
+        )
         const io = await snapshotMain()
         assert.equal(io.inFlight, 0)
         assert.equal(io.outstandingGrants, 0)

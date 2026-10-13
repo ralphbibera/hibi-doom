@@ -2566,7 +2566,7 @@ var pins_default = {
 // package.json
 var package_default = {
   name: "hibi-doom",
-  version: "0.4.0",
+  version: "0.4.1",
   private: true,
   type: "module",
   license: "GPL-3.0-only",

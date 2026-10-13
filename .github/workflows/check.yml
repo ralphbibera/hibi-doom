@@ -42,14 +42,22 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
+      - name: Apply Hibi titlebar compatibility patch
+        working-directory: hibi
+        run: |
+          git apply --check ../plugin/docs/hibi-titlebar-actions.patch
+          git apply ../plugin/docs/hibi-titlebar-actions.patch
       - name: Install Hibi dependencies
         working-directory: hibi
         run: npm ci
       - name: Check source, prepared package, and bundled gameplay
         run: npm run check
-      - name: Build stock Hibi
+      - name: Build patched Hibi
         working-directory: hibi
         run: npm run build:app
+      - name: Test native Hibi titlebar actions
+        working-directory: hibi
+        run: dbus-run-session -- xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24 -nolisten tcp' node --test tests/addon-titlebar-toolbar.test.mjs
       - name: Test native URL installation
         run: dbus-run-session -- xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24 -nolisten tcp' npm run test:hibi
       - name: Upload native installation proof

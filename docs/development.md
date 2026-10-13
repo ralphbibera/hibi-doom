@@ -4,16 +4,20 @@ To play Doom, follow the [installation instructions](../README.md). Use this gui
 
 ## Prepare the development tools
 
-Use Node.js 24 or later. The compatibility target is [Hibi revision `7a137cfe9d6c6bc0fbb78cb4169bd71ccd09ca0b`](https://github.com/schmayterling/hibi/tree/7a137cfe9d6c6bc0fbb78cb4169bd71ccd09ca0b), which provides addon API version 2.
+Use Node.js 24 or later. The compatibility target is [Hibi revision `7a137cfe9d6c6bc0fbb78cb4169bd71ccd09ca0b`](https://github.com/schmayterling/hibi/tree/7a137cfe9d6c6bc0fbb78cb4169bd71ccd09ca0b) with [the supplied titlebar patch](hibi-titlebar-actions.patch). It provides addon API version 2 and the optional `ToolbarItem.location` field.
 
 Prepare that Hibi checkout and install its development dependencies:
 
 ```sh
 git clone https://github.com/schmayterling/hibi.git /path/to/hibi
 git -C /path/to/hibi checkout 7a137cfe9d6c6bc0fbb78cb4169bd71ccd09ca0b
+git -C /path/to/hibi apply --check /path/to/hibi-doom/docs/hibi-titlebar-actions.patch
+git -C /path/to/hibi apply /path/to/hibi-doom/docs/hibi-titlebar-actions.patch
 npm --prefix /path/to/hibi ci
 export HIBI_ROOT=/path/to/hibi
 ```
+
+The patch adds a generic titlebar slot to Hibi's existing addon toolbar registry. It contains no Doom code and preserves ordinary editor toolbar actions. It also includes generated API documentation and a native regression test. Stock Hibi ignores the new location and places the action in its editor toolbar, so use the command palette or app menu there.
 
 Run the remaining addon commands from this checkout or an extracted source archive. The scripts use esbuild, TypeScript, and Biome from `HIBI_ROOT`. The addon has no runtime npm dependencies.
 
@@ -43,7 +47,7 @@ Run the local checks:
 npm run check
 ```
 
-The checks run Biome, validate TypeScript against Hibi's SDK, compare prepared files with a fresh build, and run the tests. Package tests inspect both `addon/` and the complete repository ZIP through stock Hibi's inventory APIs.
+The checks run Biome, validate TypeScript against the patched Hibi SDK, compare prepared files with a fresh build, and run the tests. Package tests inspect both `addon/` and the complete repository ZIP through Hibi's inventory APIs.
 
 For a narrower check, use `npm run build:check` for package freshness, `npm run typecheck` for SDK types, or `npm test` for tests alone.
 
@@ -53,14 +57,15 @@ The tests obtain verified shareware data through `scripts/download-iwad.mjs`. Th
 
 ## Verify URL installation in Hibi
 
-Build stock Hibi, then run the native test from the addon checkout:
+Build the patched Hibi, then run its titlebar regression and the native addon test:
 
 ```sh
 npm --prefix "$HIBI_ROOT" run build:app
+(cd "$HIBI_ROOT" && node --test tests/addon-titlebar-toolbar.test.mjs)
 npm run test:hibi
 ```
 
-Do not copy Doom into Hibi's source addon directory. The test installs the prepared package through Hibi's URL flow with a local HTTPS certificate trusted only by its Electron process. First Play uses the stock SDK and actual public feed. The test checks cached play without feed access, input, pause, note preservation, session cleanup, removal, and offline license and source export.
+Do not copy Doom into Hibi's source addon directory. The test installs the prepared package through Hibi's URL flow with a local HTTPS certificate trusted only by its Electron process. First Play uses the actual public feed. The test checks titlebar placement, cached play without feed access, input, pause, note preservation, session cleanup, removal, and offline license and source export.
 
 On Linux, use a desktop session or the headless command in [.github/workflows/check.yml](../.github/workflows/check.yml):
 
