@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "engine": {
+    "bytes": 456566,
+    "sha256": "9f49010fb7ea8111346f315a6261806268f4fc70dd9b3d951b9a8eca3f3fbf82",
+    "revision": "e257a09527062bfb986b6e5e0780839b6cbd5b71",
+    "license": "GPL-3.0-only",
+    "sourceLicense": "GPL-2.0-or-later AND GPL-3.0-or-later AND GPL-3.0-only"
+  },
+  "iwad": {
+    "bytes": 4196020,
+    "sha256": "1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771",
+    "edition": "doom-1.9-shareware",
+    "license": "LicenseRef-DOOM-shareware",
+    "feed": {
+      "url": "https://gist.githubusercontent.com/ralphbibera/1a077d178d8544746423ddd84a2ca1ef/raw/8a5669e288bfa19ba9d08aaa0ba8be34f02113ef/manifest.json",
+      "bytes": 1715,
+      "sha256": "90215e77c9623360d404489c88826a5310fd2c5f566cb23e09184a0246ae56e1"
+    }
+  },
+  "sdk": {
+    "version": "27.0",
+    "compiler": "20.1.8-wasi-sdk",
+    "sourceRevision": "fbdec30656d4099da5c7fd7e8275e4af777ca97e",
+    "arm64MacArchiveSha256": "055c3dc2766772c38e71a05d353e35c322c7b2c6458a36a26a836f9808a550f8"
+  },
+  "wasiLibcRevision": "3f7eb4c7d6ede4dde3c4bffa6ed14e8d656fe93f",
+  "compilerRtRevision": "87f0227cb60147a26a1eeb4fb06e3b505e9c7261"
+}

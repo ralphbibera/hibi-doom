@@ -1,0 +1,6 @@
+addon/generated/
+artifacts/
+node_modules/
+*.wasm
+*.wad
+*.cjs

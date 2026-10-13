@@ -1,0 +1,5 @@
+addon/** linguist-generated=true
+vendor/** linguist-vendored=true
+engine/upstream.json linguist-generated=true linguist-vendored=true
+engine/upstream-inventory.json linguist-generated=true
+engine/linked.json linguist-generated=true

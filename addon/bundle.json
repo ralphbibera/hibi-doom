@@ -1,0 +1,46 @@
+{
+  "schema": 2,
+  "engine": {
+    "bytes": 456566,
+    "sha256": "9f49010fb7ea8111346f315a6261806268f4fc70dd9b3d951b9a8eca3f3fbf82",
+    "chunks": [
+      {
+        "path": "assets/engine/000.json",
+        "jsonBytes": 608769,
+        "decodedBytes": 456566,
+        "sha256": "9f49010fb7ea8111346f315a6261806268f4fc70dd9b3d951b9a8eca3f3fbf82"
+      }
+    ],
+    "abi": "doomgeneric-wasi-v1"
+  },
+  "iwad": {
+    "bytes": 4196020,
+    "sha256": "1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771",
+    "edition": "doom-1.9-shareware",
+    "license": "LicenseRef-DOOM-shareware",
+    "feed": {
+      "url": "https://gist.githubusercontent.com/ralphbibera/1a077d178d8544746423ddd84a2ca1ef/raw/8a5669e288bfa19ba9d08aaa0ba8be34f02113ef/manifest.json",
+      "bytes": 1715,
+      "sha256": "90215e77c9623360d404489c88826a5310fd2c5f566cb23e09184a0246ae56e1"
+    }
+  },
+  "source": {
+    "bytes": 3120915,
+    "sha256": "bead285f8452cbb68744c154a851a03576b5caebd7b228db35b3b3e544076a00",
+    "chunks": [
+      {
+        "path": "assets/source/000.json",
+        "jsonBytes": 4161233,
+        "decodedBytes": 3120915,
+        "sha256": "bead285f8452cbb68744c154a851a03576b5caebd7b228db35b3b3e544076a00"
+      }
+    ],
+    "archive": "tar.gz",
+    "exportName": "hibi-doom-0.3.0-source.tar.gz"
+  },
+  "notices": {
+    "path": "LICENSES.md",
+    "bytes": 122467,
+    "sha256": "1a0cb17f087f0848fba5b7e2d6b4240e3cd76883dd2c86368c1c17b2fea7b020"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "hibi-doom",
+  "name": "Doom",
+  "description": "Play the first episode of classic Doom.",
+  "apiVersion": 2,
+  "version": "0.3.0",
+  "kind": "extension",
+  "activation": "command",
+  "capabilities": ["ui"],
+  "network": { "origins": ["https://gist.githubusercontent.com"] },
+  "defaultEnabled": false,
+  "authors": [{ "displayName": "Hibi Doom contributors" }],
+  "commands": [
+    { "id": "play", "label": "Play Doom", "menu": { "location": "app" } },
+    {
+      "id": "licenses",
+      "label": "Doom license and source",
+      "menu": { "location": "app" }
+    }
+  ],
+  "entry": "index.js"
+}

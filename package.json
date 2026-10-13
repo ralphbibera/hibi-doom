@@ -1,0 +1,18 @@
+{
+  "name": "hibi-doom",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "license": "GPL-3.0-only",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "build": "node scripts/build.mjs",
+    "build:check": "node scripts/build.mjs --check",
+    "typecheck": "node scripts/typecheck.mjs",
+    "test": "node --test --test-concurrency=1 tests/model.test.mjs tests/install.test.mjs tests/bundle.test.mjs tests/iwad.test.mjs tests/bundled-runtime.test.mjs",
+    "test:hibi": "node --test tests/hibi.integration.test.mjs"
+  }
+}

@@ -1,0 +1,65 @@
+name: check
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  plugin:
+    name: Plugin and Hibi integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+        working-directory: plugin
+    env:
+      HIBI_ROOT: ${{ github.workspace }}/hibi
+      HIBI_TEST_SHOW_WINDOWS: '1'
+      HIBI_DOOM_ARTIFACT_ROOT: ${{ github.workspace }}/proof
+    steps:
+      - name: Check out plugin
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: plugin
+          persist-credentials: false
+      - name: Check out pinned Hibi
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: schmayterling/hibi
+          ref: 7a137cfe9d6c6bc0fbb78cb4169bd71ccd09ca0b
+          path: hibi
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      - name: Install Hibi dependencies
+        working-directory: hibi
+        run: npm ci
+      - name: Check source, prepared package, and bundled gameplay
+        run: npm run check
+      - name: Build stock Hibi
+        working-directory: hibi
+        run: npm run build:app
+      - name: Test native URL installation
+        run: dbus-run-session -- xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24 -nolisten tcp' npm run test:hibi
+      - name: Upload native installation proof
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hibi-doom-proof
+          path: |
+            ${{ github.workspace }}/proof/hibi-doom-url-*/*.json
+            ${{ github.workspace }}/proof/hibi-doom-url-*/*.png
+            ${{ github.workspace }}/proof/hibi-doom-url-*/doom-addon.zip
+          retention-days: 7
+          if-no-files-found: warn
