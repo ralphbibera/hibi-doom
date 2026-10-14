@@ -25,20 +25,20 @@
     }
   },
   "source": {
-    "bytes": 3162496,
-    "sha256": "8466ba3eff807c0613f52e6f47d355c60137afb0cb1aace3e04fa992401aaee2",
+    "bytes": 3162481,
+    "sha256": "23b4c5c6ddc67027dda2b9af7ad62308f6e6b476ee5716af3b72dad5200906fd",
     "chunks": [
       {
         "path": "assets/source/000.json",
         "jsonBytes": 4194317,
         "decodedBytes": 3145728,
-        "sha256": "56656c3793233fd75955c1e9b599a8526b8a7a98d01c2716628eae1a23513e6b"
+        "sha256": "85d45bcc8fc8fd4c3fcce34a173c1295121e6758cf29e41790410a8706867da5"
       },
       {
         "path": "assets/source/001.json",
-        "jsonBytes": 22373,
-        "decodedBytes": 16768,
-        "sha256": "1732dbbe3d8affd1220759c21beca651b9afc24e954563d12d3ee67e43b3f944"
+        "jsonBytes": 22353,
+        "decodedBytes": 16753,
+        "sha256": "8ceb2f6ea5f0bab214711fc8b157d8b1f5cdd6644f3059e6947be7fbdc94b4d1"
       }
     ],
     "archive": "tar.gz",

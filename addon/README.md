@@ -6,21 +6,22 @@ The engine is included. The first **Play Doom** downloads unchanged Doom 1.9 sha
 
 ## Install and play
 
-Use a Hibi build with addon API version 2. This repository is private. Install a local package from its owner or use the prepared `addon/` folder in a checkout.
+Use a Hibi build with addon API version 2.
 
-Install the prepared package in Hibi:
+1. Open **Settings > Addon Manager > Install from URL**.
+2. Paste this ZIP URL:
 
-If the owner supplies a ZIP, extract it first.
+   ```text
+   https://github.com/ralphbibera/hibi-doom/archive/refs/heads/main.zip
+   ```
 
-1. Choose **Install addon…** from the command palette.
-2. Select the prepared addon folder containing `hibi-addon.json`.
 3. Review **Doom** and the trust notice, then confirm installation.
-4. Enable **Doom** under **Settings > Addons**. Hibi installs the addon disabled.
+4. Enable **Doom** in **Addon Manager**. Hibi installs the addon disabled.
 5. Choose **Play Doom** from the command palette or app menu. With the [titlebar compatibility build](https://github.com/ralphbibera/hibi-doom/blob/main/docs/development.md#prepare-the-development-tools), click the skull immediately left of the document view button in the window's top bar.
 
 Connect to the internet for the first game. Doom shows download progress and starts automatically. You do not need Git, Node.js, or a manual engine or game download.
 
-**Settings > Addons > Install from URL** also accepts a public HTTPS addon ZIP. It cannot download this private repository.
+To install a local copy, extract the repository ZIP first. Choose **Install addon…** from the command palette and select its `addon/` folder containing `hibi-addon.json`.
 
 When the title appears, click the game, press `Enter`, and choose **New Game**, the first episode, and a difficulty. Run **Play Doom** again to return to an open game.
 
