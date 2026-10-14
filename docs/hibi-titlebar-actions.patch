@@ -357,6 +357,18 @@ index beb728fd..0d02e81e 100644
          {!settingsOpen && !activeAddonTab && (
            <nav className="view-switch" aria-label="Editor view">
              {(['normal', 'side-by-side', 'markdown'] as const).map((view) => {
+diff --git a/src/renderer/src/main.tsx b/src/renderer/src/main.tsx
+index a8aab3f4..293f5f5d 100644
+--- a/src/renderer/src/main.tsx
++++ b/src/renderer/src/main.tsx
+@@ -2389,6 +2389,7 @@ function App() {
+       ...toolbarSnapshot.items
+         .filter(
+           (item) =>
++            item.location !== 'titlebar' &&
+             !item.disabled &&
+             !item.hidden &&
+             (!item.when ||
 diff --git a/src/renderer/src/styles.css b/src/renderer/src/styles.css
 index 4737342e..b0ceaacd 100644
 --- a/src/renderer/src/styles.css
@@ -602,10 +614,10 @@ index 00000000..90db3025
 +}
 diff --git a/tests/addon-titlebar-toolbar.test.mjs b/tests/addon-titlebar-toolbar.test.mjs
 new file mode 100644
-index 00000000..c7efeee2
+index 00000000..17e7a594
 --- /dev/null
 +++ b/tests/addon-titlebar-toolbar.test.mjs
-@@ -0,0 +1,255 @@
+@@ -0,0 +1,277 @@
 +import assert from 'node:assert/strict'
 +import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 +import { tmpdir } from 'node:os'
@@ -763,6 +775,28 @@ index 00000000..c7efeee2
 +      .isDisabled(),
 +    true,
 +  )
++
++  await clickMenu(app, 'Command palette')
++  const palette = page.getByRole('dialog', { name: /^command palette$/i })
++  const search = palette.getByRole('combobox', { name: /search commands/i })
++  await search.fill('Open fixture session')
++  const command = palette.getByRole('option', { name: /^Open fixture session/ })
++  await command.waitFor()
++  assert.equal(await command.count(), 1)
++  assert.equal(await command.getAttribute('id'), 'command-titlebar-probe.open')
++  assert.equal(
++    await palette.locator('[id="command-toolbar.titlebar-probe.open"]').count(),
++    0,
++  )
++  await search.fill('Editor action')
++  const editorCommand = palette.getByRole('option', { name: /^Editor action/ })
++  await editorCommand.waitFor()
++  assert.equal(
++    await editorCommand.getAttribute('id'),
++    'command-toolbar.titlebar-probe.legacy',
++  )
++  await page.keyboard.press('Escape')
++  await palette.waitFor({ state: 'hidden' })
 +
 +  await page.setViewportSize({ width: 480, height: 800 })
 +  await page
