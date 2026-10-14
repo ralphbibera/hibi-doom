@@ -81,7 +81,11 @@ Each completed draw captures 64,000 palette indices and 768 gamma-corrected RGB 
 
 Mouse motion uses successive `clientX` coordinates. The renderer maps one CSS pixel to eight raw units at a 640-pixel canvas width and retains fractional units between frame samples. Pending renderer motion, the C mailbox, and unconsumed responder motion each saturate at 2,048 units. At the default core sensitivity of five, that bounds a tic to 90 degrees. Saturation deliberately discards overflow. The existing core sensitivity setting applies once when the responder accepts an event. Zero-motion polls preserve unconsumed motion. Suspension clears both the mailbox and the responder.
 
-The addon uses ordinary held-button pointer capture. Stock Hibi denies Pointer Lock, so the cursor remains visible and turning stops at screen edges. Keyboard and pointer actions have separate sources. Escape clears held input and releases capture before retaining its menu tap.
+Hibi's [session permission handlers](https://github.com/schmayterling/hibi/blob/7a137cfe9d6c6bc0fbb78cb4169bd71ccd09ca0b/src/main/index.ts#L1280) reject permission checks and requests, including `pointerLock`. The addon therefore cannot use `requestPointerLock()` to hide the cursor or receive continuous relative mouse movement. The titlebar compatibility patch leaves this policy unchanged.
+
+The addon uses `setPointerCapture()` while a mouse button is held. Pointer capture keeps drag events outside the canvas, but it does not hide or recenter the cursor. Turning stops at screen edges. Continuous mouse aiming requires Hibi to permit Pointer Lock.
+
+Keyboard and pointer actions have separate sources. Escape clears held input and releases pointer capture before retaining its menu tap.
 
 The verified IWAD supplies the complete sound bank before its bytes transfer to the worker. PCM uses the original sample rate and the pinned DMX trim of sixteen samples at each end. `s_sound.c` retains channel selection, priority, replacement, attenuation, and separation. The owned backend answers playing queries from eight worker slots and active-time deadlines. Start, stop, and music transitions publish immediately during guest calls. Parameter changes coalesce into every update, including unchanged video. Both the publisher and receive boundary enforce 256 notices per outstanding operation and fail explicitly on overflow.
 

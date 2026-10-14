@@ -614,10 +614,10 @@ index 00000000..90db3025
 +}
 diff --git a/tests/addon-titlebar-toolbar.test.mjs b/tests/addon-titlebar-toolbar.test.mjs
 new file mode 100644
-index 00000000..17e7a594
+index 00000000..93282004
 --- /dev/null
 +++ b/tests/addon-titlebar-toolbar.test.mjs
-@@ -0,0 +1,277 @@
+@@ -0,0 +1,291 @@
 +import assert from 'node:assert/strict'
 +import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 +import { tmpdir } from 'node:os'
@@ -756,22 +756,30 @@ index 00000000..17e7a594
 +    1,
 +  )
 +  assert.equal(
-+    await page.locator('[data-toolbar-id="titlebar-probe.source"]').count(),
-+    0,
-+  )
-+  assert.equal(
-+    await page.locator('[data-toolbar-id="titlebar-probe.hidden"]').count(),
-+    0,
-+  )
-+  assert.equal(
 +    await page
-+      .locator('[data-toolbar-id="titlebar-probe.saved-hidden"]')
++      .locator('.titlebar-actions > [data-toolbar-id="titlebar-probe.source"]')
 +      .count(),
 +    0,
 +  )
 +  assert.equal(
 +    await page
-+      .locator('[data-toolbar-id="titlebar-probe.disabled"]')
++      .locator('.titlebar-actions > [data-toolbar-id="titlebar-probe.hidden"]')
++      .count(),
++    0,
++  )
++  assert.equal(
++    await page
++      .locator(
++        '.titlebar-actions > [data-toolbar-id="titlebar-probe.saved-hidden"]',
++      )
++      .count(),
++    0,
++  )
++  assert.equal(
++    await page
++      .locator(
++        '.titlebar-actions > [data-toolbar-id="titlebar-probe.disabled"]',
++      )
 +      .isDisabled(),
 +    true,
 +  )
@@ -846,9 +854,13 @@ index 00000000..17e7a594
 +  assert.equal(await tab.count(), 1)
 +  await page.locator(`#document-tab-${note.tabId}`).click()
 +  await page.getByRole('button', { name: 'Source view', exact: true }).click()
-+  await page.locator('[data-toolbar-id="titlebar-probe.source"]').waitFor()
++  await page
++    .locator('.titlebar-actions > [data-toolbar-id="titlebar-probe.source"]')
++    .waitFor()
 +  assert.equal(
-+    await page.locator('[data-toolbar-id="titlebar-probe.normal"]').count(),
++    await page
++      .locator('.titlebar-actions > [data-toolbar-id="titlebar-probe.normal"]')
++      .count(),
 +    0,
 +  )
 +  await page.evaluate(() =>
@@ -871,9 +883,11 @@ index 00000000..17e7a594
 +  await page.getByRole('tab', { name: 'Addon Manager', exact: true }).click()
 +  await page.locator('#addon-titlebar-probe').click()
 +  await page.getByRole('button', { name: 'Back to app', exact: true }).click()
-+  await page
-+    .locator('[data-toolbar-id^="titlebar-probe."]')
-+    .waitFor({ state: 'detached' })
++  await page.waitForFunction(
++    () =>
++      document.querySelectorAll('[data-toolbar-id^="titlebar-probe."]')
++        .length === 0,
++  )
 +  assert.equal(await tab.count(), 0)
 +  await page.evaluate(() =>
 +    window.titlebarProbe.handles.open.update({ disabled: false }),

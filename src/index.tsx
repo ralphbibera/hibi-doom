@@ -42,9 +42,11 @@ const create: CapabilityFactory = (sdk) => {
   const { Button, ControlRow, Panel, PanelMessage } = ui
   const cleanups = new Set<() => void>()
 
+  // Lucide Skull from lucide-react 1.55.0. See licenses/lucide-skull-LICENSE.txt.
   function SkullIcon({ size = 24, strokeWidth = 2 }) {
     return (
       <svg
+        xmlns="http://www.w3.org/2000/svg"
         width={size}
         height={size}
         viewBox="0 0 24 24"
@@ -55,10 +57,10 @@ const create: CapabilityFactory = (sdk) => {
         strokeLinejoin="round"
         aria-hidden="true"
       >
-        <path d="M8 21v-4l-3-2V9a7 7 0 0 1 14 0v6l-3 2v4Z" />
-        <circle cx="9" cy="11" r="1.5" />
-        <circle cx="15" cy="11" r="1.5" />
-        <path d="m11 16 1-2 1 2M11 18v3m2-3v3" />
+        <path d="m12.5 17-.5-1-.5 1h1z" />
+        <path d="M15 22a1 1 0 0 0 1-1v-1a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20v1a1 1 0 0 0 1 1z" />
+        <circle cx="15" cy="12" r="1" />
+        <circle cx="9" cy="12" r="1" />
       </svg>
     )
   }

@@ -1,5 +1,5 @@
 // doom:bundle
-var bundle_default = { schema: 2, engine: { bytes: 456114, sha256: "33aa16f84b0166fcc1ff150ee90f12e89593cacbd005fd3b7f35c88eecb01416", chunks: [{ path: "assets/engine/000.json", jsonBytes: 608165, decodedBytes: 456114, sha256: "33aa16f84b0166fcc1ff150ee90f12e89593cacbd005fd3b7f35c88eecb01416" }], abi: "doomgeneric-wasi-v2" }, iwad: { bytes: 4196020, sha256: "1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771", edition: "doom-1.9-shareware", license: "LicenseRef-DOOM-shareware", feed: { url: "https://gist.githubusercontent.com/ralphbibera/1a077d178d8544746423ddd84a2ca1ef/raw/8a5669e288bfa19ba9d08aaa0ba8be34f02113ef/manifest.json", bytes: 1715, sha256: "90215e77c9623360d404489c88826a5310fd2c5f566cb23e09184a0246ae56e1" } }, source: { bytes: 3161611, sha256: "af760d7726580002022474ec644bc0458505aa99e73cea5c488d708dadcb2f8d", chunks: [{ path: "assets/source/000.json", jsonBytes: 4194317, decodedBytes: 3145728, sha256: "722e18aceb782915b8bd42a2181d732719068861687fe6092d6157592b0fff61" }, { path: "assets/source/001.json", jsonBytes: 21193, decodedBytes: 15883, sha256: "548a5e9b0def500bd0c92f1302ec29e8c8917a4d7995d8fb041f86d8e112cfee" }], archive: "tar.gz", exportName: "hibi-doom-0.4.1-source.tar.gz" }, notices: { path: "LICENSES.md", bytes: 122611, sha256: "4170a918b6ad10a5a74d1c59ad615784a39294c61f1df8b3790052993d6250d0" } };
+var bundle_default = { schema: 2, engine: { bytes: 456114, sha256: "33aa16f84b0166fcc1ff150ee90f12e89593cacbd005fd3b7f35c88eecb01416", chunks: [{ path: "assets/engine/000.json", jsonBytes: 608165, decodedBytes: 456114, sha256: "33aa16f84b0166fcc1ff150ee90f12e89593cacbd005fd3b7f35c88eecb01416" }], abi: "doomgeneric-wasi-v2" }, iwad: { bytes: 4196020, sha256: "1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771", edition: "doom-1.9-shareware", license: "LicenseRef-DOOM-shareware", feed: { url: "https://gist.githubusercontent.com/ralphbibera/1a077d178d8544746423ddd84a2ca1ef/raw/8a5669e288bfa19ba9d08aaa0ba8be34f02113ef/manifest.json", bytes: 1715, sha256: "90215e77c9623360d404489c88826a5310fd2c5f566cb23e09184a0246ae56e1" } }, source: { bytes: 3162496, sha256: "8466ba3eff807c0613f52e6f47d355c60137afb0cb1aace3e04fa992401aaee2", chunks: [{ path: "assets/source/000.json", jsonBytes: 4194317, decodedBytes: 3145728, sha256: "56656c3793233fd75955c1e9b599a8526b8a7a98d01c2716628eae1a23513e6b" }, { path: "assets/source/001.json", jsonBytes: 22373, decodedBytes: 16768, sha256: "1732dbbe3d8affd1220759c21beca651b9afc24e954563d12d3ee67e43b3f944" }], archive: "tar.gz", exportName: "hibi-doom-0.4.1-source.tar.gz" }, notices: { path: "LICENSES.md", bytes: 123460, sha256: "dfac4d66e55ef842a58d3eca17438d1bd4bce9afaed0e65f5954f12abae7f4bc" } };
 
 // src/audio-scene.ts
 var audioNotificationBudget = 256;
@@ -1790,6 +1790,7 @@ var create = (sdk) => {
     return /* @__PURE__ */ React.createElement(
       "svg",
       {
+        xmlns: "http://www.w3.org/2000/svg",
         width: size2,
         height: size2,
         viewBox: "0 0 24 24",
@@ -1800,10 +1801,10 @@ var create = (sdk) => {
         strokeLinejoin: "round",
         "aria-hidden": "true"
       },
-      /* @__PURE__ */ React.createElement("path", { d: "M8 21v-4l-3-2V9a7 7 0 0 1 14 0v6l-3 2v4Z" }),
-      /* @__PURE__ */ React.createElement("circle", { cx: "9", cy: "11", r: "1.5" }),
-      /* @__PURE__ */ React.createElement("circle", { cx: "15", cy: "11", r: "1.5" }),
-      /* @__PURE__ */ React.createElement("path", { d: "m11 16 1-2 1 2M11 18v3m2-3v3" })
+      /* @__PURE__ */ React.createElement("path", { d: "m12.5 17-.5-1-.5 1h1z" }),
+      /* @__PURE__ */ React.createElement("path", { d: "M15 22a1 1 0 0 0 1-1v-1a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20v1a1 1 0 0 0 1 1z" }),
+      /* @__PURE__ */ React.createElement("circle", { cx: "15", cy: "12", r: "1" }),
+      /* @__PURE__ */ React.createElement("circle", { cx: "9", cy: "12", r: "1" })
     );
   }
   function DoomTab({

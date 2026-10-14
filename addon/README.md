@@ -30,7 +30,9 @@ The titlebar skull requires the supplied Hibi compatibility patch. Stock Hibi AP
 
 Move the mouse horizontally while the game has focus to turn and aim. Left click fires, and right click opens doors or uses switches. Vertical mouse movement is ignored.
 
-The cursor stays visible. Holding a game mouse button keeps the drag active outside the canvas, but the cursor cannot move past the screen edge. Escape releases the drag and opens Doom's menu. Change **Mouse sensitivity** in Doom's **Options** menu to adjust turning speed.
+Cursor lock is unavailable because Hibi blocks Pointer Lock, the browser feature that hides and captures the mouse. The cursor stays visible, so mouse turning stops at screen edges. Use Left and Right to keep turning at an edge.
+
+Holding a game mouse button keeps the drag active outside the canvas. Escape releases the drag and opens Doom's menu. Change **Mouse sensitivity** in Doom's **Options** menu to adjust turning speed.
 
 Use these keys while the game has focus:
 

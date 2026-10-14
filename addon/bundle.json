@@ -25,20 +25,20 @@
     }
   },
   "source": {
-    "bytes": 3161611,
-    "sha256": "af760d7726580002022474ec644bc0458505aa99e73cea5c488d708dadcb2f8d",
+    "bytes": 3162496,
+    "sha256": "8466ba3eff807c0613f52e6f47d355c60137afb0cb1aace3e04fa992401aaee2",
     "chunks": [
       {
         "path": "assets/source/000.json",
         "jsonBytes": 4194317,
         "decodedBytes": 3145728,
-        "sha256": "722e18aceb782915b8bd42a2181d732719068861687fe6092d6157592b0fff61"
+        "sha256": "56656c3793233fd75955c1e9b599a8526b8a7a98d01c2716628eae1a23513e6b"
       },
       {
         "path": "assets/source/001.json",
-        "jsonBytes": 21193,
-        "decodedBytes": 15883,
-        "sha256": "548a5e9b0def500bd0c92f1302ec29e8c8917a4d7995d8fb041f86d8e112cfee"
+        "jsonBytes": 22373,
+        "decodedBytes": 16768,
+        "sha256": "1732dbbe3d8affd1220759c21beca651b9afc24e954563d12d3ee67e43b3f944"
       }
     ],
     "archive": "tar.gz",
@@ -46,7 +46,7 @@
   },
   "notices": {
     "path": "LICENSES.md",
-    "bytes": 122611,
-    "sha256": "4170a918b6ad10a5a74d1c59ad615784a39294c61f1df8b3790052993d6250d0"
+    "bytes": 123460,
+    "sha256": "dfac4d66e55ef842a58d3eca17438d1bd4bce9afaed0e65f5954f12abae7f4bc"
   }
 }
