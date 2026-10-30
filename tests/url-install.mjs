@@ -1237,7 +1237,7 @@ export async function runUrlInstallAcceptance(options = {}) {
       manifest = JSON.parse(
         await readFile(join(prepared, 'hibi-addon.json'), 'utf8'),
       )
-      assert.equal(manifest.apiVersion, 2)
+      assert.equal(manifest.apiVersion, 3)
       assert.equal(manifest.kind, 'extension')
       assert.equal(manifest.defaultEnabled, false)
       assert.deepEqual(manifest.capabilities, ['ui'])

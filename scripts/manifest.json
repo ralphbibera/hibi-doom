@@ -2,7 +2,7 @@
   "id": "hibi-doom",
   "name": "Doom",
   "description": "Play the first episode of classic Doom.",
-  "apiVersion": 2,
+  "apiVersion": 3,
   "version": "0.4.1",
   "kind": "extension",
   "capabilities": ["ui"],
